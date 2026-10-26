@@ -1,10 +1,9 @@
+using Buyer.API.Controllers;
 using Microsoft.AspNetCore.Diagnostics;
-using Microsoft.AspNetCore.Mvc;
 
 namespace Buyer.API.Middlewares;
 
 public sealed class GlobalExceptionHandler(
-    IProblemDetailsService problemDetailsService,
     ILogger<GlobalExceptionHandler> logger) : IExceptionHandler
 {
     public async ValueTask<bool> TryHandleAsync(
@@ -15,14 +14,9 @@ public sealed class GlobalExceptionHandler(
         logger.LogError(exception, "An unhandled exception occurred");
         httpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
 
-        return await problemDetailsService.TryWriteAsync(new ProblemDetailsContext
-        {
-            HttpContext = httpContext,
-            ProblemDetails = new ProblemDetails
-            {
-                Status = StatusCodes.Status500InternalServerError,
-                Title = "An unexpected error occurred"
-            }
-        });
+        await httpContext.Response.WriteAsJsonAsync(
+            ApiEnvelope<object>.Failure("INTERNAL_ERROR", "An unexpected error occurred"),
+            cancellationToken);
+        return true;
     }
 }
