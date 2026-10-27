@@ -3,6 +3,8 @@ import { FeaturePlaceholderPage } from '../shared/components/FeaturePlaceholderP
 import { AppLayout } from './AppLayout'
 import { HomePage } from './HomePage'
 import { NotFoundPage } from './NotFoundPage'
+import { ProductListPage } from '../features/catalog/ProductListPage'
+import { ProductDetailPage } from '../features/catalog/ProductDetailPage'
 
 export const router = createBrowserRouter([
   {
@@ -10,7 +12,8 @@ export const router = createBrowserRouter([
     element: <AppLayout />,
     children: [
       { index: true, element: <HomePage /> },
-      { path: 'catalog', element: <FeaturePlaceholderPage title="Product Catalog" /> },
+      { path: 'catalog', element: <ProductListPage /> },
+      { path: 'products/:productId', element: <ProductDetailPage /> },
       { path: 'cart', element: <FeaturePlaceholderPage title="Cart" /> },
       { path: 'orders', element: <FeaturePlaceholderPage title="Orders" /> },
       { path: 'profile', element: <FeaturePlaceholderPage title="Profile" /> },
