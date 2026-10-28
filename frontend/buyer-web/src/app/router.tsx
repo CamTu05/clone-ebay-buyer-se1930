@@ -1,6 +1,7 @@
 import { createBrowserRouter } from 'react-router-dom'
 import { LoginPage } from '../features/authentication/LoginPage'
 import { ProtectedRoute } from '../features/authentication/ProtectedRoute'
+import { CatalogPage } from '../features/catalog/CatalogPage'
 import { FeaturePlaceholderPage } from '../shared/components/FeaturePlaceholderPage'
 import { AppLayout } from './AppLayout'
 import { HomePage } from './HomePage'
@@ -12,7 +13,7 @@ export const router = createBrowserRouter([
     element: <AppLayout />,
     children: [
       { index: true, element: <HomePage /> },
-      { path: 'catalog', element: <FeaturePlaceholderPage title="Product Catalog" /> },
+      { path: 'catalog', element: <CatalogPage /> },
       { path: 'cart', element: <FeaturePlaceholderPage title="Cart" /> },
       { path: 'login', element: <LoginPage /> },
       {

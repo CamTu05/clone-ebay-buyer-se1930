@@ -79,9 +79,17 @@ docker compose up --build
 
 The Compose configuration is intended for local development and requires Docker Desktop.
 
+## Product catalog
+
+Open `/catalog` to browse available products with names, VND prices, images, and server-side pagination. Missing/broken images use a placeholder; empty pages and API failures have dedicated states with recovery actions.
+
+The public endpoint is `GET /api/products?page=1&pageSize=20` (`pageSize` up to 100). It reads the existing database-first schema through a repository and returns one entry per product with the cheapest eligible listing. Auction prices are labeled as the current bid. See `docs/04_API_Contract_Clone_eBay_Buyer.md`, section 3.2, for availability and price selection rules.
+
+Catalog data requires the existing SQL Server database through `ConnectionStrings__BuyerDatabase`, plus the existing JWT startup settings including `Jwt__SigningKey`. No database is created and no seed data is inserted by this feature.
+
 ## Known Limitations
 
-- No authentication, authorization, business workflows, database entities, migrations, or seed data exist yet.
+- Buyer login and product browsing are implemented; other business workflows and seed data remain pending.
 - The custom `dbo.User` schema versus ASP.NET Core Identity strategy must be approved before authentication persistence is implemented; do not create a second user system.
 - External module abstractions are documented but not implemented yet.
 - Kubernetes and JMeter configurations await deployment and performance requirements.
