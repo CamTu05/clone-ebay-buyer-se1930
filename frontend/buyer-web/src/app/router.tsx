@@ -1,4 +1,6 @@
 import { createBrowserRouter } from 'react-router-dom'
+import { LoginPage } from '../features/authentication/LoginPage'
+import { ProtectedRoute } from '../features/authentication/ProtectedRoute'
 import { FeaturePlaceholderPage } from '../shared/components/FeaturePlaceholderPage'
 import { AppLayout } from './AppLayout'
 import { HomePage } from './HomePage'
@@ -15,8 +17,14 @@ export const router = createBrowserRouter([
       { path: 'catalog', element: <ProductListPage /> },
       { path: 'products/:productId', element: <ProductDetailPage /> },
       { path: 'cart', element: <FeaturePlaceholderPage title="Cart" /> },
-      { path: 'orders', element: <FeaturePlaceholderPage title="Orders" /> },
-      { path: 'profile', element: <FeaturePlaceholderPage title="Profile" /> },
+      { path: 'login', element: <LoginPage /> },
+      {
+        element: <ProtectedRoute />,
+        children: [
+          { path: 'orders', element: <FeaturePlaceholderPage title="Orders" /> },
+          { path: 'profile', element: <FeaturePlaceholderPage title="Profile" /> },
+        ],
+      },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

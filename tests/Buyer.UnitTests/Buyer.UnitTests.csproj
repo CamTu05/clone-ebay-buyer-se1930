@@ -12,6 +12,9 @@
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="Microsoft.Extensions.Identity.Core" Version="8.0.19" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.2" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.14.0" />
     <PackageReference Include="xunit" Version="2.5.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" />
   </ItemGroup>
@@ -23,6 +26,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\backend\Buyer.Application\Buyer.Application.csproj" />
     <ProjectReference Include="..\..\backend\Buyer.Domain\Buyer.Domain.csproj" />
+    <ProjectReference Include="..\..\backend\Buyer.Infrastructure\Buyer.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
