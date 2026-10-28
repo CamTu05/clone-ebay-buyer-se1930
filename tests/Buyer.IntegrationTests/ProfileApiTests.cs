@@ -64,24 +64,27 @@ public sealed class ProfileApiTests
         Assert.Contains("PROFILE_USERNAME_TAKEN", await response.Content.ReadAsStringAsync());
     }
 
-    private static WebApplicationFactory<Program> CreateFactory(IProfileService profiles) =>
-        new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
-        {
-            builder.ConfigureAppConfiguration((_, config) =>
-                config.AddInMemoryCollection(new Dictionary<string, string?>
-                {
-                    ["Jwt:SigningKey"] = SigningKey,
-                    ["Jwt:Issuer"] = "profile-api-tests",
-                    ["Jwt:Audience"] = "profile-api-tests",
-                    ["Jwt:DurationMinutes"] = "15"
-                }));
-            builder.ConfigureTestServices(services =>
-            {
-                services.RemoveAll<IProfileService>();
-                services.AddSingleton(profiles);
-            });
-        });
+    private static WebApplicationFactory<Program> CreateFactory(
+    IProfileService profiles) =>
+    new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
+    {
+        builder.UseSetting(
+            "ConnectionStrings:BuyerDatabase",
+            "Server=localhost;Database=BuyerApiTests;" +
+            "User Id=test_user;Password=TestOnly_Password123!;" +
+            "TrustServerCertificate=True");
 
+        builder.UseSetting("Jwt:SigningKey", SigningKey);
+        builder.UseSetting("Jwt:Issuer", "profile-api-tests");
+        builder.UseSetting("Jwt:Audience", "profile-api-tests");
+        builder.UseSetting("Jwt:DurationMinutes", "15");
+
+        builder.ConfigureTestServices(services =>
+        {
+            services.RemoveAll<IProfileService>();
+            services.AddSingleton(profiles);
+        });
+    });
     private static string Token(int userId, string role)
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(SigningKey));
