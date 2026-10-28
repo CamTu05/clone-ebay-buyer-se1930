@@ -14,11 +14,19 @@ public sealed class ProductEndpointTests
     private sealed class CatalogFactory : WebApplicationFactory<Program>
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)
-            => builder.ConfigureServices(services =>
+        {
+            builder.UseSetting("ConnectionStrings:BuyerDatabase",
+                "Server=(localdb)\\MSSQLLocalDB;Database=BuyerApiTests;Trusted_Connection=True");
+            builder.UseSetting("Jwt:Issuer", "BuyerApi.Tests");
+            builder.UseSetting("Jwt:Audience", "BuyerApi.Tests.Client");
+            builder.UseSetting("Jwt:SigningKey", "test-only-signing-key-at-least-32-characters");
+            builder.UseSetting("Jwt:DurationMinutes", "15");
+            builder.ConfigureServices(services =>
             {
                 services.RemoveAll<IProductRepository>();
                 services.AddSingleton<IProductRepository>(new SampleProducts());
             });
+        }
     }
 
     private sealed class SampleProducts : IProductRepository
