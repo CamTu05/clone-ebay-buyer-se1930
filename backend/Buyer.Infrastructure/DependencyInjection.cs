@@ -1,7 +1,9 @@
 using Buyer.Application.Authentication;
+using Buyer.Application.Features.Profile;
 using Buyer.Infrastructure.Authentication;
 using Buyer.Infrastructure.Data;
 using Buyer.Infrastructure.Data.Models;
+using Buyer.Infrastructure.Profiles;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -40,6 +42,10 @@ public static class DependencyInjection
         services.AddScoped<IPasswordVerifier, PasswordVerifier>();
         services.AddScoped<IAccessTokenGenerator, JwtAccessTokenGenerator>();
         services.AddScoped<IAuthService, AuthService>();
+
+        //PROFILE - EBAY-20
+        services.AddScoped<IProfileRepository, ProfileRepository>();
+        services.AddScoped<IProfileService, ProfileService>();
 
         return services;
     }
