@@ -5,7 +5,7 @@ import { FeaturePlaceholderPage } from '../shared/components/FeaturePlaceholderP
 import { AppLayout } from './AppLayout'
 import { HomePage } from './HomePage'
 import { NotFoundPage } from './NotFoundPage'
-
+import { ProfilePage } from '../features/profile/ProfilePage'
 export const router = createBrowserRouter([
   {
     path: '/',
@@ -19,7 +19,7 @@ export const router = createBrowserRouter([
         element: <ProtectedRoute />,
         children: [
           { path: 'orders', element: <FeaturePlaceholderPage title="Orders" /> },
-          { path: 'profile', element: <FeaturePlaceholderPage title="Profile" /> },
+          { path: 'profile', element: <ProfilePage /> },
         ],
       },
       { path: '*', element: <NotFoundPage /> },
