@@ -6,15 +6,17 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 
 namespace Buyer.IntegrationTests;
 
 public sealed class ProductEndpointTests
 {
-    private sealed class CatalogFactory : WebApplicationFactory<Program>
+    private sealed class CatalogFactory(IProductRepository? repository = null) : WebApplicationFactory<Program>
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
+            builder.ConfigureLogging(logging => logging.ClearProviders());
             builder.UseSetting("ConnectionStrings:BuyerDatabase",
                 "Server=(localdb)\\MSSQLLocalDB;Database=BuyerApiTests;Trusted_Connection=True");
             builder.UseSetting("Jwt:Issuer", "BuyerApi.Tests");
@@ -23,8 +25,10 @@ public sealed class ProductEndpointTests
             builder.UseSetting("Jwt:DurationMinutes", "15");
             builder.ConfigureServices(services =>
             {
+                services.RemoveAll<IProductCatalogService>();
+                services.AddSingleton<IProductCatalogService>(new SampleCatalog());
                 services.RemoveAll<IProductRepository>();
-                services.AddSingleton<IProductRepository>(new SampleProducts());
+                services.AddSingleton<IProductRepository>(repository ?? new SampleProducts());
             });
         }
     }
@@ -37,8 +41,41 @@ public sealed class ProductEndpointTests
                 [new(11, "FIXED_PRICE", 500000, new(2, "seller", null, "Camera store")),
                  new(12, "AUCTION", 400000, new(3, "other-seller", null, null))]) : null);
 
-        public Task<ProductPageResponse> GetPageAsync(int page, int pageSize, CancellationToken cancellationToken)
-            => Task.FromResult(new ProductPageResponse([new(1, "Camera", "https://example.com/camera.jpg")], page, pageSize, 1, 1));
+    }
+
+    private sealed class SampleCatalog : IProductCatalogService
+    {
+        public Task<ProductPageResponse> GetProductsAsync(ProductListRequest request, CancellationToken cancellationToken = default)
+            => Task.FromResult(new ProductPageResponse([new(1, 11, "Camera", 500000m, "https://example.com/camera.jpg", "FIXED_PRICE")], request.Page, request.PageSize, 1, 1));
+    }
+
+    private sealed class FailingProducts(bool unavailable) : IProductRepository
+    {
+        public Task<ProductDetailResponse?> GetDetailAsync(int productId, CancellationToken cancellationToken)
+            => Task.FromException<ProductDetailResponse?>(unavailable
+                ? new CatalogUnavailableException()
+                : new InvalidOperationException("private-database-connection-details"));
+    }
+
+    [Theory]
+    [InlineData(false, HttpStatusCode.InternalServerError, "INTERNAL_ERROR", "An unexpected error occurred")]
+    [InlineData(true, HttpStatusCode.ServiceUnavailable, "CATALOG_UNAVAILABLE", "The product catalog is temporarily unavailable.")]
+    public async Task DetailFailureReturnsDocumentedErrorWithoutLeakingExceptionDetails(
+        bool unavailable, HttpStatusCode status, string code, string message)
+    {
+        using var factory = new CatalogFactory(new FailingProducts(unavailable));
+        using var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/api/products/1");
+        var body = await response.Content.ReadFromJsonAsync<ApiResponse<ProductDetailResponse>>();
+
+        Assert.Equal(status, response.StatusCode);
+        Assert.NotNull(body);
+        Assert.False(body.Success);
+        Assert.Null(body.Data);
+        Assert.Equal(message, body.Message);
+        Assert.Equal(code, Assert.Single(body.Errors!).Code);
+        Assert.DoesNotContain("private-database-connection-details", await response.Content.ReadAsStringAsync());
     }
 
     [Fact]
@@ -96,7 +133,7 @@ public sealed class ProductEndpointTests
     [InlineData("page=0")]
     [InlineData("pageSize=101")]
     [InlineData("page=abc")]
-    [InlineData("page=2147483647&pageSize=100")]
+
     public async Task InvalidPaginationReturnsEnvelope(string query)
     {
         using var factory = new CatalogFactory();

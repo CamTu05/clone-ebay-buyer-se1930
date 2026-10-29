@@ -4,7 +4,7 @@ Implementation scope: public product details and a minimal paginated catalog so 
 
 ## Contract implemented for this feature
 
-`GET /api/products?page=1&pageSize=20` returns the standard success envelope with `data: { items, page, pageSize, totalItems, totalPages }`. Each item contains `productId`, `name`, and nullable `imageUrl`. Page starts at 1; pageSize is 1–100. Invalid pagination returns 400.
+`GET /api/products?page=1&pageSize=20` returns the standard success envelope with `data: { items, page, pageSize, totalItems, totalPages }`. Each item contains `productId`, `listingId`, `name`, `price`, nullable `imageUrl`, and `listingType`. The list retains the availability and pricing rules in section 3.2 of `04_API_Contract_Clone_eBay_Buyer.md`; details use the public-listing rules below. Page starts at 1; pageSize is 1–100. Invalid pagination returns 400.
 
 `GET /api/products/{productId}` returns the standard success envelope with:
 

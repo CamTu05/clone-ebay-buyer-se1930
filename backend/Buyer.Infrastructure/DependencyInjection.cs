@@ -1,6 +1,7 @@
-using Buyer.Application.Catalog;
 using Buyer.Application.Authentication;
+using Buyer.Application.Catalog;
 using Buyer.Infrastructure.Authentication;
+using Buyer.Infrastructure.Catalog;
 using Buyer.Infrastructure.Data;
 using Buyer.Infrastructure.Data.Models;
 using Microsoft.AspNetCore.Identity;
@@ -46,6 +47,8 @@ public static class DependencyInjection
         services.AddScoped<IPasswordVerifier, PasswordVerifier>();
         services.AddScoped<IAccessTokenGenerator, JwtAccessTokenGenerator>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IProductCatalogRepository, ProductCatalogRepository>();
+        services.AddScoped<IProductCatalogService, ProductCatalogService>();
 
         return services;
     }

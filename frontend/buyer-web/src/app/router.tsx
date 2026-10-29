@@ -1,11 +1,12 @@
 import { createBrowserRouter } from 'react-router-dom'
 import { LoginPage } from '../features/authentication/LoginPage'
 import { ProtectedRoute } from '../features/authentication/ProtectedRoute'
+import { CatalogPage } from '../features/catalog/CatalogPage'
 import { FeaturePlaceholderPage } from '../shared/components/FeaturePlaceholderPage'
 import { AppLayout } from './AppLayout'
 import { HomePage } from './HomePage'
 import { NotFoundPage } from './NotFoundPage'
-import { ProductListPage } from '../features/catalog/ProductListPage'
+
 import { ProductDetailPage } from '../features/catalog/ProductDetailPage'
 
 export const router = createBrowserRouter([
@@ -14,7 +15,7 @@ export const router = createBrowserRouter([
     element: <AppLayout />,
     children: [
       { index: true, element: <HomePage /> },
-      { path: 'catalog', element: <ProductListPage /> },
+      { path: 'catalog', element: <CatalogPage /> },
       { path: 'products/:productId', element: <ProductDetailPage /> },
       { path: 'cart', element: <FeaturePlaceholderPage title="Cart" /> },
       { path: 'login', element: <LoginPage /> },
