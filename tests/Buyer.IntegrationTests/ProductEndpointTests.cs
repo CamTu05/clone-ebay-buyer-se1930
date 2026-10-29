@@ -6,15 +6,17 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 
 namespace Buyer.IntegrationTests;
 
 public sealed class ProductEndpointTests
 {
-    private sealed class CatalogFactory : WebApplicationFactory<Program>
+    private sealed class CatalogFactory(IProductRepository? repository = null) : WebApplicationFactory<Program>
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
+            builder.ConfigureLogging(logging => logging.ClearProviders());
             builder.UseSetting("ConnectionStrings:BuyerDatabase",
                 "Server=(localdb)\\MSSQLLocalDB;Database=BuyerApiTests;Trusted_Connection=True");
             builder.UseSetting("Jwt:Issuer", "BuyerApi.Tests");
@@ -26,7 +28,7 @@ public sealed class ProductEndpointTests
                 services.RemoveAll<IProductCatalogService>();
                 services.AddSingleton<IProductCatalogService>(new SampleCatalog());
                 services.RemoveAll<IProductRepository>();
-                services.AddSingleton<IProductRepository>(new SampleProducts());
+                services.AddSingleton<IProductRepository>(repository ?? new SampleProducts());
             });
         }
     }
@@ -45,6 +47,35 @@ public sealed class ProductEndpointTests
     {
         public Task<ProductPageResponse> GetProductsAsync(ProductListRequest request, CancellationToken cancellationToken = default)
             => Task.FromResult(new ProductPageResponse([new(1, 11, "Camera", 500000m, "https://example.com/camera.jpg", "FIXED_PRICE")], request.Page, request.PageSize, 1, 1));
+    }
+
+    private sealed class FailingProducts(bool unavailable) : IProductRepository
+    {
+        public Task<ProductDetailResponse?> GetDetailAsync(int productId, CancellationToken cancellationToken)
+            => Task.FromException<ProductDetailResponse?>(unavailable
+                ? new CatalogUnavailableException()
+                : new InvalidOperationException("private-database-connection-details"));
+    }
+
+    [Theory]
+    [InlineData(false, HttpStatusCode.InternalServerError, "INTERNAL_ERROR", "An unexpected error occurred")]
+    [InlineData(true, HttpStatusCode.ServiceUnavailable, "CATALOG_UNAVAILABLE", "The product catalog is temporarily unavailable.")]
+    public async Task DetailFailureReturnsDocumentedErrorWithoutLeakingExceptionDetails(
+        bool unavailable, HttpStatusCode status, string code, string message)
+    {
+        using var factory = new CatalogFactory(new FailingProducts(unavailable));
+        using var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/api/products/1");
+        var body = await response.Content.ReadFromJsonAsync<ApiResponse<ProductDetailResponse>>();
+
+        Assert.Equal(status, response.StatusCode);
+        Assert.NotNull(body);
+        Assert.False(body.Success);
+        Assert.Null(body.Data);
+        Assert.Equal(message, body.Message);
+        Assert.Equal(code, Assert.Single(body.Errors!).Code);
+        Assert.DoesNotContain("private-database-connection-details", await response.Content.ReadAsStringAsync());
     }
 
     [Fact]
