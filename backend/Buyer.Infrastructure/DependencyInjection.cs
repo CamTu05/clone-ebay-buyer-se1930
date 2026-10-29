@@ -27,6 +27,11 @@ public static class DependencyInjection
         if (!string.IsNullOrWhiteSpace(connectionString))
         {
             services.AddDbContext<CloneEbayDbContext>(options => options.UseSqlServer(connectionString));
+            services.AddScoped<IProductRepository, ProductRepository>();
+        }
+        else
+        {
+            services.AddScoped<IProductRepository, UnavailableProductRepository>();
         }
 
         services.AddOptions<JwtOptions>()

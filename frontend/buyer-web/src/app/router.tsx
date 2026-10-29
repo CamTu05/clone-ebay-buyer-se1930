@@ -7,6 +7,8 @@ import { AppLayout } from './AppLayout'
 import { HomePage } from './HomePage'
 import { NotFoundPage } from './NotFoundPage'
 
+import { ProductDetailPage } from '../features/catalog/ProductDetailPage'
+
 export const router = createBrowserRouter([
   {
     path: '/',
@@ -14,6 +16,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <HomePage /> },
       { path: 'catalog', element: <CatalogPage /> },
+      { path: 'products/:productId', element: <ProductDetailPage /> },
       { path: 'cart', element: <FeaturePlaceholderPage title="Cart" /> },
       { path: 'login', element: <LoginPage /> },
       {

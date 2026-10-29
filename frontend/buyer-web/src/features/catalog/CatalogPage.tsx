@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { ErrorMessage } from '../../shared/components/ErrorMessage'
 import { Loading } from '../../shared/components/Loading'
 import { getCatalogErrorMessage, getProducts } from './catalogApi'
@@ -130,7 +130,7 @@ export function CatalogPage() {
                     <article className="h-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
                       <ProductImage key={`${product.listingId}:${product.imageUrl}`} product={product} />
                       <div className="space-y-3 p-4">
-                        <h2 className="break-words font-semibold">{product.name}</h2>
+                        <h2 className="break-words font-semibold"><Link className="hover:underline focus-visible:underline" to={`/products/${product.productId}`}>{product.name}</Link></h2>
                         <div>
                           <p className="text-xs font-medium text-slate-500">{product.listingType === 'AUCTION' ? 'Current bid' : 'Price'}</p>
                           <p className="mt-1 text-lg font-bold">{priceFormatter.format(product.price)}</p>
