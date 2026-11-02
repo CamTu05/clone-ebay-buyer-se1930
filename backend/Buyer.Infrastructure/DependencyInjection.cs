@@ -1,3 +1,4 @@
+using Buyer.Application.Catalog;
 using Buyer.Application.Authentication;
 using Buyer.Application.Features.Profile;
 using Buyer.Infrastructure.Authentication;
@@ -27,6 +28,11 @@ public static class DependencyInjection
         if (!string.IsNullOrWhiteSpace(connectionString))
         {
             services.AddDbContext<CloneEbayDbContext>(options => options.UseSqlServer(connectionString));
+            services.AddScoped<IProductRepository, ProductRepository>();
+        }
+        else
+        {
+            services.AddScoped<IProductRepository, UnavailableProductRepository>();
         }
 
         services.AddOptions<JwtOptions>()

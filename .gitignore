@@ -32,3 +32,4 @@ coverage/
 # SQL Server
 *.mdf
 *.ldf
+.tmp-dotnet/

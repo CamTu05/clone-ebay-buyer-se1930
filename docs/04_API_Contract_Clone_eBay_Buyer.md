@@ -73,8 +73,8 @@
 | Address | GET/POST | `/api/addresses` | JWT | P0 | PROPOSED | TBD |
 | Address | PATCH/DELETE | `/api/addresses/{addressId}` | JWT/owner | P0 | PROPOSED | TBD |
 | Address | PATCH | `/api/addresses/{addressId}/default` | JWT/owner | P0 | PROPOSED | TBD |
-| Catalog | GET | `/api/products` | Public | P0 | PROPOSED | TBD |
-| Catalog | GET | `/api/products/{productId}` | Public | P0 | PROPOSED | TBD |
+| Catalog | GET | `/api/products` | Public | P0 | IMPLEMENTED | TBD |
+| Catalog | GET | `/api/products/{productId}` | Public | P0 | IMPLEMENTED | TBD |
 | Listing | GET | `/api/listings/{listingId}` | Public | P0 | PROPOSED | TBD |
 | Cart | GET | `/api/cart` | JWT | P0 | PROPOSED | TBD |
 | Cart | POST | `/api/cart/items` | JWT | P0 | PROPOSED | TBD |
@@ -176,6 +176,8 @@ Implemented policy assumptions:
 **Multi-seller:** `POST /api/orders` phải thể hiện `CheckoutGroup` và danh sách seller-specific orders trong response. Chưa chốt JSON cụ thể cho đến khi Owner hoàn thiện hợp đồng.
 
 ## 4. Feature-specific rules FE–BE phải giữ
+
+Product list/detail request, response, visibility and error contracts are documented in [06-product-details.md](06-product-details.md). The Product/Listing projection there is the implemented choice for team review; database-backed acceptance verification is still required.
 
 ### 4.1 Listing / Catalog
 - Phân biệt rõ `productId` và `listingId` trong URL/DTO. Cart, bidding, shipping option phụ thuộc **listing**.

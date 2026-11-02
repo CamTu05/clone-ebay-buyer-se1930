@@ -5,14 +5,18 @@ import { FeaturePlaceholderPage } from '../shared/components/FeaturePlaceholderP
 import { AppLayout } from './AppLayout'
 import { HomePage } from './HomePage'
 import { NotFoundPage } from './NotFoundPage'
+import { ProductDetailPage } from '../features/catalog/ProductDetailPage'
+import { ProductListPage } from '../features/catalog/ProductListPage'
 import { ProfilePage } from '../features/profile/ProfilePage'
+
 export const router = createBrowserRouter([
   {
     path: '/',
     element: <AppLayout />,
     children: [
       { index: true, element: <HomePage /> },
-      { path: 'catalog', element: <FeaturePlaceholderPage title="Product Catalog" /> },
+      { path: 'catalog', element: <ProductListPage /> },
+      { path: 'products/:productId', element: <ProductDetailPage /> },
       { path: 'cart', element: <FeaturePlaceholderPage title="Cart" /> },
       { path: 'login', element: <LoginPage /> },
       {

@@ -1,3 +1,4 @@
+using Buyer.Application.Catalog;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using System.Threading.RateLimiting;
@@ -25,6 +26,7 @@ builder.Services.AddControllers().ConfigureApiBehaviorOptions(options =>
             new ApiEnvelope<object>(false, "Validation failed", null, errors));
     };
 });
+builder.Services.AddScoped<ProductService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {

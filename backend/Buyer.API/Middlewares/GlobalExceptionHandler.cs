@@ -1,3 +1,4 @@
+using Buyer.Application.Catalog;
 using Buyer.API.Controllers;
 using Microsoft.AspNetCore.Diagnostics;
 
@@ -12,6 +13,15 @@ public sealed class GlobalExceptionHandler(
         CancellationToken cancellationToken)
     {
         logger.LogError(exception, "An unhandled exception occurred");
+        if (httpContext.Request.Path.StartsWithSegments("/api/products"))
+        {
+            var unavailable = exception is CatalogUnavailableException;
+            httpContext.Response.StatusCode = unavailable ? 503 : 500;
+            await httpContext.Response.WriteAsJsonAsync(ApiEnvelope<object>.Failure(
+                unavailable ? "CATALOG_UNAVAILABLE" : "INTERNAL_ERROR",
+                unavailable ? "The product catalog is temporarily unavailable." : "An unexpected error occurred."), cancellationToken);
+            return true;
+        }
         httpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
 
         await httpContext.Response.WriteAsJsonAsync(
