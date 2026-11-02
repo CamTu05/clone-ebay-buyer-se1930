@@ -8,6 +8,7 @@ import { NotFoundPage } from './NotFoundPage'
 import { ProductDetailPage } from '../features/catalog/ProductDetailPage'
 import { ProductListPage } from '../features/catalog/ProductListPage'
 import { ProfilePage } from '../features/profile/ProfilePage'
+import { CartPage } from '../features/cart/CartPage'
 
 export const router = createBrowserRouter([
   {
@@ -17,11 +18,11 @@ export const router = createBrowserRouter([
       { index: true, element: <HomePage /> },
       { path: 'catalog', element: <ProductListPage /> },
       { path: 'products/:productId', element: <ProductDetailPage /> },
-      { path: 'cart', element: <FeaturePlaceholderPage title="Cart" /> },
       { path: 'login', element: <LoginPage /> },
       {
         element: <ProtectedRoute />,
         children: [
+          { path: 'cart', element: <CartPage /> },
           { path: 'orders', element: <FeaturePlaceholderPage title="Orders" /> },
           { path: 'profile', element: <ProfilePage /> },
         ],
