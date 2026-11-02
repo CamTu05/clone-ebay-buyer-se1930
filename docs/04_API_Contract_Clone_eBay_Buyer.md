@@ -76,9 +76,9 @@
 | Catalog | GET | `/api/products` | Public | P0 | TESTED | MQuynh |
 | Catalog | GET | `/api/products/{productId}` | Public | P0 | IMPLEMENTED | TBD |
 | Listing | GET | `/api/listings/{listingId}` | Public | P0 | PROPOSED | TBD |
-| Cart | GET | `/api/cart` | JWT | P0 | PROPOSED | TBD |
+| Cart | GET | `/api/cart` | JWT/BUYER | P0 | IMPLEMENTED | TBD |
 | Cart | POST | `/api/cart/items` | JWT | P0 | PROPOSED | TBD |
-| Cart | PATCH/DELETE | `/api/cart/items/{cartItemId}` | JWT/owner | P0 | PROPOSED | TBD |
+| Cart | PATCH/DELETE | `/api/cart/items/{cartItemId}` | JWT/BUYER/owner | P0 | IMPLEMENTED | TBD |
 | Cart | POST | `/api/cart/merge` | JWT | P0 | PROPOSED | TBD |
 | Checkout | POST | `/api/checkout/preview` | Guest/JWT | P0 | PROPOSED | TBD |
 | Checkout | POST | `/api/orders` | Guest/JWT | P0 | PROPOSED | TBD |
@@ -243,6 +243,19 @@ Product list/detail request, response, visibility and error contracts are docume
 - Một lần checkout có thể tạo nhiều đơn theo seller: `CheckoutGroup` → `OrderTable` → `OrderItem`.
 - COD tạo payment `PENDING`, không phải `PAID`; order status tách biệt payment status.
 - Dữ liệu shipping address, title, unitPrice, fees, tax được snapshot trong đơn.
+
+Implemented authenticated Cart contract:
+
+- `GET /api/cart` returns the current buyer's items, server-calculated item totals/subtotal,
+  `currency = VND`, availability, and `canCheckout`. A missing cart is a successful empty cart.
+- `PATCH /api/cart/items/{cartItemId}` accepts `{ "quantity": <positive integer> }` and returns
+  the recalculated cart. Quantity zero is invalid and never removes an item.
+- `DELETE /api/cart/items/{cartItemId}` removes only the owned item and returns the recalculated cart.
+- Ownership is derived from the JWT `sub`; an absent or foreign item returns `CART_ITEM_NOT_FOUND`.
+- Available stock is read as `Inventory.quantity - Inventory.reservedQuantity`; cart changes do not
+  reserve or modify inventory. Only active fixed-price listings from active sellers are purchasable.
+- Stable failures include `CART_QUANTITY_INVALID`, `CART_ITEM_NOT_FOUND`,
+  `CART_LISTING_UNAVAILABLE`, and `CART_QUANTITY_EXCEEDS_STOCK`.
 
 ### 4.3 Auction & SignalR
 - Authenticated/verified/eligible buyer mới đặt bid.
