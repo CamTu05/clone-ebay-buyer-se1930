@@ -1,13 +1,28 @@
 using Buyer.API.Responses;
 using Buyer.Application.Catalog;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Buyer.API.Controllers;
 
 [ApiController]
+[AllowAnonymous]
 [Route("api/products")]
-public sealed class ProductsController(ProductService service) : ControllerBase
+public sealed class ProductsController(IProductCatalogService catalogService, ProductService service) : ControllerBase
 {
+    [HttpGet]
+    [ProducesResponseType<ApiEnvelope<ProductPageResponse>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiEnvelope<object>>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ApiEnvelope<object>>(StatusCodes.Status429TooManyRequests)]
+    [ProducesResponseType<ApiEnvelope<object>>(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> GetProducts(
+        [FromQuery] ProductListRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await catalogService.GetProductsAsync(request, cancellationToken);
+        return Ok(ApiEnvelope<ProductPageResponse>.Succeeded(result));
+    }
+
     [HttpGet("{productId}")]
     [ProducesResponseType<ApiResponse<ProductDetailResponse>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ApiResponse<ProductDetailResponse>>(StatusCodes.Status400BadRequest)]
@@ -27,19 +42,4 @@ public sealed class ProductsController(ProductService service) : ControllerBase
             : Ok(ApiResponse<ProductDetailResponse>.Ok(product));
     }
 
-    [HttpGet]
-    [ProducesResponseType<ApiResponse<ProductPageResponse>>(StatusCodes.Status200OK)]
-    [ProducesResponseType<ApiResponse<ProductPageResponse>>(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType<ApiResponse<ProductPageResponse>>(StatusCodes.Status503ServiceUnavailable)]
-    [ProducesResponseType<ApiResponse<ProductPageResponse>>(StatusCodes.Status500InternalServerError)]
-    [ProducesResponseType<ApiResponse<ProductPageResponse>>(StatusCodes.Status429TooManyRequests)]
-    public async Task<IActionResult> GetPage([FromQuery] int page = 1, [FromQuery] int pageSize = 20,
-        CancellationToken cancellationToken = default)
-    {
-        if (page <= 0 || pageSize is < 1 or > 100 || (long)(page - 1) * pageSize > int.MaxValue)
-            return BadRequest(ApiResponse<ProductPageResponse>.Fail(
-                "Page must be positive and pageSize must be between 1 and 100.", "PAGINATION_INVALID"));
-
-        return Ok(ApiResponse<ProductPageResponse>.Ok(await service.GetPageAsync(page, pageSize, cancellationToken)));
-    }
 }

@@ -13,13 +13,13 @@ public sealed class GlobalExceptionHandler(
         CancellationToken cancellationToken)
     {
         logger.LogError(exception, "An unhandled exception occurred");
-        if (httpContext.Request.Path.StartsWithSegments("/api/products"))
+        if (httpContext.Request.Path.StartsWithSegments("/api/products")
+            && exception is CatalogUnavailableException)
         {
-            var unavailable = exception is CatalogUnavailableException;
-            httpContext.Response.StatusCode = unavailable ? 503 : 500;
+            httpContext.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
             await httpContext.Response.WriteAsJsonAsync(ApiEnvelope<object>.Failure(
-                unavailable ? "CATALOG_UNAVAILABLE" : "INTERNAL_ERROR",
-                unavailable ? "The product catalog is temporarily unavailable." : "An unexpected error occurred."), cancellationToken);
+                "CATALOG_UNAVAILABLE",
+                "The product catalog is temporarily unavailable."), cancellationToken);
             return true;
         }
         httpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;

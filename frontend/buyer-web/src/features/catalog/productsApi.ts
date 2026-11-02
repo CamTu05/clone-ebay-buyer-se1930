@@ -17,19 +17,10 @@ export interface ProductDetail {
   images: ProductImage[]
   listings: ProductListing[]
 }
-export interface ProductPage {
-  items: { productId: number; name: string; imageUrl: string | null }[]
-  page: number
-  pageSize: number
-  totalItems: number
-  totalPages: number
-}
+
 interface Envelope<T> { success: boolean; message: string; data: T }
 
-export async function loadProducts(page: number, signal: AbortSignal) {
-  const { data } = await apiClient.get<Envelope<ProductPage>>('/api/products', { params: { page }, signal })
-  return data.data
-}
+
 export async function loadProduct(id: string, signal: AbortSignal) {
   const { data } = await apiClient.get<Envelope<ProductDetail>>(`/api/products/${encodeURIComponent(id)}`, { signal })
   return data.data

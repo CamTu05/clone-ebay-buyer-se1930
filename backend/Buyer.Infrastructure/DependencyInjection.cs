@@ -1,8 +1,8 @@
-using Buyer.Application.Catalog;
 using Buyer.Application.Authentication;
 using Buyer.Application.Features.Profile;
 using Buyer.Application.Features.Cart;
 using Buyer.Infrastructure.Authentication;
+using Buyer.Infrastructure.Catalog;
 using Buyer.Infrastructure.Data;
 using Buyer.Infrastructure.Data.Models;
 using Buyer.Infrastructure.Profiles;

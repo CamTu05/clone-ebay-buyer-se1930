@@ -23,16 +23,4 @@ public sealed class ProductRepository(CloneEbayDbContext db) : IProductRepositor
             .SingleOrDefaultAsync(cancellationToken);
     }
 
-    public async Task<ProductPageResponse> GetPageAsync(int page, int pageSize, CancellationToken cancellationToken)
-    {
-        var query = db.Products.AsNoTracking().Where(p => p.category.isActive
-            && p.Listings.Any(l => l.status == "ACTIVE" && l.seller.accountStatus == "ACTIVE"));
-        var total = await query.CountAsync(cancellationToken);
-        var items = await query.OrderBy(p => p.id).Skip((page - 1) * pageSize).Take(pageSize)
-            .Select(p => new ProductSummaryResponse(p.id, p.title,
-                p.ProductImages.OrderByDescending(i => i.isPrimary).ThenBy(i => i.sortOrder).ThenBy(i => i.id)
-                    .Select(i => i.imageUrl).FirstOrDefault()))
-            .ToListAsync(cancellationToken);
-        return new ProductPageResponse(items, page, pageSize, total, (int)Math.Ceiling(total / (double)pageSize));
-    }
 }
