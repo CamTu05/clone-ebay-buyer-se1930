@@ -3,8 +3,8 @@ using System.ComponentModel.DataAnnotations;
 namespace Buyer.Application.Authentication;
 
 public sealed record LoginRequest(
-    [property: Required, EmailAddress] string? Email,
-    [property: Required] string? Password);
+    [param: Required, EmailAddress] string? Email,
+    [param: Required] string? Password);
 
 public sealed record AuthenticatedUser(
     int Id,

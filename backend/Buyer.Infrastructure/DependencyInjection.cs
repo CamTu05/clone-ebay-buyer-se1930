@@ -1,8 +1,11 @@
 using Buyer.Application.Catalog;
 using Buyer.Application.Authentication;
+using Buyer.Application.Features.Profile;
+using Buyer.Application.Features.Cart;
 using Buyer.Infrastructure.Authentication;
 using Buyer.Infrastructure.Data;
 using Buyer.Infrastructure.Data.Models;
+using Buyer.Infrastructure.Profiles;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -27,6 +30,7 @@ public static class DependencyInjection
         {
             services.AddDbContext<CloneEbayDbContext>(options => options.UseSqlServer(connectionString));
             services.AddScoped<IProductRepository, ProductRepository>();
+            services.AddScoped<ICartRepository, CartRepository>();
         }
         else
         {
@@ -46,6 +50,11 @@ public static class DependencyInjection
         services.AddScoped<IPasswordVerifier, PasswordVerifier>();
         services.AddScoped<IAccessTokenGenerator, JwtAccessTokenGenerator>();
         services.AddScoped<IAuthService, AuthService>();
+
+        //PROFILE - EBAY-20
+        services.AddScoped<IProfileRepository, ProfileRepository>();
+        services.AddScoped<IProfileService, ProfileService>();
+        services.AddScoped<ICartService, CartService>();
 
         return services;
     }
