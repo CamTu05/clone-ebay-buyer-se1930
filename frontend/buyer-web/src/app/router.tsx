@@ -10,6 +10,7 @@ import { NotFoundPage } from './NotFoundPage'
 import { ProductDetailPage } from '../features/catalog/ProductDetailPage'
 import { ProfilePage } from '../features/profile/ProfilePage'
 import { CartPage } from '../features/cart/CartPage'
+import { AddressesPage } from '../features/addresses/AddressesPage'
 
 export const router = createBrowserRouter([
   {
@@ -24,6 +25,8 @@ export const router = createBrowserRouter([
         element: <ProtectedRoute />,
         children: [
           { path: 'cart', element: <CartPage /> },
+          { path: 'addresses', element: <AddressesPage /> },
+          { path: 'checkout', element: <AddressesPage checkout /> },
           { path: 'orders', element: <FeaturePlaceholderPage title="Orders" /> },
           { path: 'profile', element: <ProfilePage /> },
         ],

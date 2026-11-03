@@ -1,0 +1,121 @@
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { useAuth } from '../authentication/useAuth'
+import { AddressForm } from './AddressForm'
+import { addressError, deleteAddress, loadAddresses, loadCountries, makeDefault, resolveAddress, saveAddress } from './addressesApi'
+import type { AddressInput, Country, ShippingAddress } from './addressesApi'
+
+export function AddressesPage({ checkout = false }: { checkout?: boolean }) {
+  const { user } = useAuth()
+  return <AddressWorkspace key={`${user?.id}:${checkout}`} checkout={checkout} />
+}
+
+export function AddressText({ address }: { address: ShippingAddress }) {
+  return <div className="space-y-1 break-words text-slate-700">
+    <p className="font-semibold text-slate-900">{address.fullName}</p>
+    <p>{address.street}</p>
+    {address.addressLine2 && <p>{address.addressLine2}</p>}
+    <p>{[address.city, address.state, address.postalCode].filter(Boolean).join(', ')}</p>
+    <p>{address.country}</p><p>{address.phone}</p>
+  </div>
+}
+
+function AddressWorkspace({ checkout }: { checkout: boolean }) {
+  const [revision, setRevision] = useState(0)
+  const [loaded, setLoaded] = useState<{ revision: number; addresses: ShippingAddress[]; countries: Country[]; error: string } | null>(null)
+  const [editor, setEditor] = useState<ShippingAddress | 'new' | null>(null)
+  const [deleting, setDeleting] = useState<ShippingAddress | null>(null)
+  const [selectedId, setSelectedId] = useState<number | null>(null)
+  const [confirmed, setConfirmed] = useState<ShippingAddress | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
+  const view = loaded?.revision === revision ? loaded : null
+  const addresses = view?.addresses ?? []
+  const selected = addresses.find(a => a.id === selectedId) ?? addresses.find(a => a.isDefault) ?? addresses[0]
+
+  useEffect(() => {
+    const controller = new AbortController()
+    Promise.all([loadAddresses(controller.signal), loadCountries(controller.signal)]).then(([list, countries]) => {
+      if (!controller.signal.aborted) setLoaded({ revision, addresses: list, countries, error: '' })
+    }).catch((reason: unknown) => {
+      if (!controller.signal.aborted) setLoaded({ revision, addresses: [], countries: [], error: addressError(reason) })
+    })
+    return () => controller.abort()
+  }, [revision])
+
+  async function mutate(action: () => Promise<unknown>, message: string) {
+    if (busy) return
+    setBusy(true)
+    setError('')
+    setNotice('')
+    setConfirmed(null)
+    try {
+      await action()
+      setEditor(null)
+      setDeleting(null)
+      setNotice(message)
+      setRevision(value => value + 1)
+    } catch (reason) { setError(addressError(reason)) }
+    finally { setBusy(false) }
+  }
+
+  async function save(input: AddressInput) {
+    await mutate(async () => {
+      const saved = await saveAddress(input, editor && editor !== 'new' ? editor.id : undefined)
+      if (checkout) setSelectedId(saved.id)
+    }, 'Address saved. Existing orders are unchanged.')
+  }
+
+  async function selectForCheckout() {
+    if (!selected || busy) return
+    setBusy(true)
+    setError('')
+    setConfirmed(null)
+    try { setConfirmed(await resolveAddress(selected.id)) }
+    catch (reason) { setError(addressError(reason)); setRevision(value => value + 1) }
+    finally { setBusy(false) }
+  }
+
+  const button = 'rounded-full border border-slate-400 px-4 py-2 text-sm font-semibold disabled:opacity-50'
+  return <section className="mx-auto max-w-4xl space-y-6">
+    <div className="flex flex-wrap items-start justify-between gap-4">
+      <div><p className="mb-2 text-sm text-slate-600">{checkout ? 'Checkout · Delivery address' : 'My account'}</p>
+        <h1 className="text-3xl font-bold">{checkout ? 'Ship to' : 'Shipping addresses'}</h1>
+        <p className="mt-2 text-slate-600">{checkout ? 'Your primary address is selected initially. Choose another destination for this purchase without changing your primary address.' : 'Save delivery addresses and choose your primary shipping address.'}</p>
+      </div>
+      <Link className="text-blue-700 underline" to={checkout ? '/addresses' : '/checkout'}>{checkout ? 'Manage address book' : 'Choose a delivery address'}</Link>
+    </div>
+    {checkout && <p className="text-sm text-slate-600">Review your delivery address. Order confirmation and payment are not available yet.</p>}
+    <p className="text-sm text-slate-600">Address changes apply to future purchases. They do not change delivery details on existing orders.</p>
+    {notice && <p role="status" className="text-green-800">{notice}</p>}
+    {error && <p role="alert" className="text-red-700">{error}</p>}
+    {!view ? <p role="status">Loading addresses…</p> : view.error ? <div role="alert"><p className="text-red-700">{view.error}</p><button className={button} onClick={() => setRevision(value => value + 1)}>Try again</button></div> : <>
+      {addresses.length === 0 && <p className="rounded-xl border border-slate-200 bg-white p-6">No shipping addresses yet. Add one to choose a delivery destination.</p>}
+      <fieldset disabled={busy || editor !== null || deleting !== null} className="grid gap-4 sm:grid-cols-2">
+        <legend className="sr-only">{checkout ? 'Choose shipping address' : 'Saved shipping addresses'}</legend>
+        {addresses.map(address => <article key={address.id} className={`space-y-4 rounded-xl border bg-white p-6 ${checkout && selected?.id === address.id ? 'border-blue-700 ring-1 ring-blue-700' : 'border-slate-200'}`}>
+          {checkout && <label className="flex items-center gap-2 font-semibold"><input type="radio" name="shippingAddress" checked={selected?.id === address.id} onChange={() => { setSelectedId(address.id); setConfirmed(null) }} />Ship to {address.fullName}</label>}
+          {address.isDefault && <p className="text-sm font-semibold text-blue-800">Primary shipping address</p>}
+          <AddressText address={address} />
+          <div className="flex flex-wrap gap-3">
+            <button className={button} onClick={() => { setEditor(address); setError(''); setConfirmed(null) }}>Edit</button>
+            <button className={button} onClick={() => { setDeleting(address); setError(''); setConfirmed(null) }}>Delete</button>
+            {!address.isDefault && <button className={button} onClick={() => void mutate(() => makeDefault(address.id), 'Primary shipping address updated.')}>Make primary</button>}
+          </div>
+        </article>)}
+      </fieldset>
+      {deleting && <div className="space-y-3 rounded-xl border border-slate-300 bg-white p-6" role="group" aria-label="Confirm address deletion">
+        <h2 className="font-semibold">Delete this address?</h2><AddressText address={deleting} />
+        <p>Existing order addresses will be preserved.{deleting.isDefault && addresses.length > 1 ? ' Your oldest remaining address will become primary.' : ''}</p>
+        <div className="flex gap-3"><button disabled={busy} className={button} onClick={() => void mutate(() => deleteAddress(deleting.id), 'Address deleted.')}>Confirm delete</button><button disabled={busy} className={button} onClick={() => setDeleting(null)}>Cancel</button></div>
+      </div>}
+      {editor !== null ? <AddressForm key={editor === 'new' ? 'new' : editor.id} address={editor === 'new' ? null : editor} countries={view.countries} busy={busy} onSave={save} onCancel={() => { setEditor(null); setError('') }} />
+        : !deleting && <button disabled={busy} className={button} onClick={() => { setEditor('new'); setError(''); setConfirmed(null) }}>Add a new address</button>}
+      {checkout && selected && !editor && !deleting && <div className="space-y-3 border-t border-slate-200 pt-6">
+        <button disabled={busy} className="rounded-full bg-blue-700 px-6 py-3 font-semibold text-white disabled:opacity-50" onClick={() => void selectForCheckout()}>{busy ? 'Checking address…' : 'Use this address'}</button>
+        {confirmed && <div role="status" className="space-y-2"><h2 className="font-semibold">Delivery address selected</h2><AddressText address={confirmed} /><p className="text-sm text-slate-600">No order has been placed. Choosing a delivery address does not change your primary address.</p></div>}
+      </div>}
+    </>}
+  </section>
+}

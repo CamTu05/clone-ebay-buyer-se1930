@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace Buyer.IntegrationTests;
@@ -11,6 +12,7 @@ public sealed class HealthEndpointTests : IClassFixture<WebApplicationFactory<Pr
     {
         _client = factory.WithWebHostBuilder(builder =>
         {
+            builder.UseSetting("environment", "Development");
             builder.UseSetting(
                 "ConnectionStrings:BuyerDatabase",
                 "Server=(localdb)\\MSSQLLocalDB;Database=BuyerApiTests;Trusted_Connection=True");
@@ -30,5 +32,18 @@ public sealed class HealthEndpointTests : IClassFixture<WebApplicationFactory<Pr
         var response = await _client.GetAsync(endpoint);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task SwaggerDefinitionIncludesAuthProductsAndAddressesWithoutSchemaConflicts()
+    {
+        var response = await _client.GetAsync("/swagger/v1/swagger.json");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var paths = document.RootElement.GetProperty("paths");
+        Assert.True(paths.TryGetProperty("/api/auth/login", out _));
+        Assert.True(paths.TryGetProperty("/api/products/{productId}", out _));
+        Assert.True(paths.TryGetProperty("/api/addresses", out _));
+        Assert.True(document.RootElement.GetProperty("components").GetProperty("schemas").TryGetProperty("ApiError", out _));
     }
 }

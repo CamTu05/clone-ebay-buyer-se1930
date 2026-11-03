@@ -1,6 +1,7 @@
+using Buyer.API.Controllers;
+
 namespace Buyer.API.Responses;
 
-public sealed record ApiError(string Code, string? Field = null);
 public sealed record ApiResponse<T>(bool Success, string Message, T? Data, IReadOnlyList<ApiError>? Errors)
 {
     public static ApiResponse<T> Ok(T data) => new(true, "Success", data, null);
