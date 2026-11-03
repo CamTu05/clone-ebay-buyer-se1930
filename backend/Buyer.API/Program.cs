@@ -1,4 +1,5 @@
 using Buyer.Application.Catalog;
+using Buyer.Application.Addresses;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using System.Threading.RateLimiting;
@@ -27,6 +28,8 @@ builder.Services.AddControllers().ConfigureApiBehaviorOptions(options =>
     };
 });
 builder.Services.AddScoped<ProductService>();
+builder.Services.AddScoped<AddressService>();
+builder.Services.AddScoped<AddressExceptionFilter>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {

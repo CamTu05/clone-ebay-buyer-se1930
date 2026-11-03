@@ -7,6 +7,7 @@ const navigation = [
   ['Cart', '/cart'],
   ['Orders', '/orders'],
   ['Profile', '/profile'],
+  ['Addresses', '/addresses'],
 ]
 
 export function AppLayout() {

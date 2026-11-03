@@ -1,3 +1,5 @@
+using Buyer.Application.Addresses;
+using Buyer.Application.Catalog;
 using Buyer.Application.Authentication;
 using Buyer.Application.Features.Profile;
 using Buyer.Application.Features.Cart;
@@ -30,11 +32,14 @@ public static class DependencyInjection
         {
             services.AddDbContext<CloneEbayDbContext>(options => options.UseSqlServer(connectionString));
             services.AddScoped<IProductRepository, ProductRepository>();
+            services.AddScoped<IProductCatalogRepository, ProductCatalogRepository>();
             services.AddScoped<ICartRepository, CartRepository>();
+            services.AddScoped<IAddressRepository, AddressRepository>();
         }
         else
         {
             services.AddScoped<IProductRepository, UnavailableProductRepository>();
+            services.AddScoped<IAddressRepository, UnavailableAddressRepository>();
         }
 
         services.AddOptions<JwtOptions>()
@@ -50,6 +55,7 @@ public static class DependencyInjection
         services.AddScoped<IPasswordVerifier, PasswordVerifier>();
         services.AddScoped<IAccessTokenGenerator, JwtAccessTokenGenerator>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IProductCatalogService, ProductCatalogService>();
 
         //PROFILE - EBAY-20
         services.AddScoped<IProfileRepository, ProfileRepository>();

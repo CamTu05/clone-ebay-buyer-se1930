@@ -70,9 +70,9 @@
 | Auth/Social | GET | `/api/auth/external/{provider}/callback` | Public | P0* | PROPOSED | TBD |
 | Profile | GET | `/api/me` | JWT | P0 | PROPOSED | TBD |
 | Profile | PATCH | `/api/me` | JWT | P0 | PROPOSED | TBD |
-| Address | GET/POST | `/api/addresses` | JWT | P0 | PROPOSED | TBD |
-| Address | PATCH/DELETE | `/api/addresses/{addressId}` | JWT/owner | P0 | PROPOSED | TBD |
-| Address | PATCH | `/api/addresses/{addressId}/default` | JWT/owner | P0 | PROPOSED | TBD |
+| Address | GET/POST | `/api/addresses` | JWT | P0 | IMPLEMENTED | TBD |
+| Address | GET/PATCH/DELETE | `/api/addresses/{addressId}` | JWT/owner | P0 | IMPLEMENTED | TBD |
+| Address | PATCH | `/api/addresses/{addressId}/default` | JWT/owner | P0 | IMPLEMENTED | TBD |
 | Catalog | GET | `/api/products` | Public | P0 | TESTED | MQuynh |
 | Catalog | GET | `/api/products/{productId}` | Public | P0 | IMPLEMENTED | TBD |
 | Listing | GET | `/api/listings/{listingId}` | Public | P0 | PROPOSED | TBD |
@@ -228,6 +228,8 @@ Catalog projection and availability policy for this feature:
 **Multi-seller:** `POST /api/orders` phải thể hiện `CheckoutGroup` và danh sách seller-specific orders trong response. Chưa chốt JSON cụ thể cho đến khi Owner hoàn thiện hợp đồng.
 
 ## 4. Feature-specific rules FE–BE phải giữ
+
+Shipping address request/response/error schemas, primary-address decisions and checkout handoff are documented in [07-shipping-addresses.md](07-shipping-addresses.md). The address step is implemented; complete checkout/order creation and SQL Server concurrency acceptance remain separate integration work.
 
 Product list/detail request, response, visibility and error contracts are documented in [06-product-details.md](06-product-details.md). The Product/Listing projection there is the implemented choice for team review; database-backed acceptance verification is still required.
 
