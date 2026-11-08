@@ -13,6 +13,16 @@ public sealed record AuthUser(
 public interface IUserRepository
 {
     Task<AuthUser?> FindByNormalizedEmailAsync(string normalizedEmail, CancellationToken cancellationToken);
+    Task<bool> ExistsByNormalizedEmailAsync(string normalizedEmail, CancellationToken cancellationToken);
+    Task<bool> ExistsByNormalizedUsernameAsync(string normalizedUsername, CancellationToken cancellationToken);
+    Task<int> CreateAsync(
+        string email,
+        string username,
+        string passwordHash,
+        string role,
+        string accountStatus,
+        DateTime createdAtUtc,
+        CancellationToken cancellationToken);
     Task RecordSuccessfulLoginAsync(
         int userId,
         DateTime lastLoginAtUtc,
@@ -49,4 +59,5 @@ public interface IAccessTokenGenerator
 public interface IAuthService
 {
     Task<LoginResult> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default);
+    Task<RegisterResult> RegisterAsync(RegisterRequest request, CancellationToken cancellationToken = default);
 }

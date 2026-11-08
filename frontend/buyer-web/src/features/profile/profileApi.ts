@@ -20,6 +20,16 @@ export async function updateProfile(request: UpdateProfileRequest): Promise<Buye
   return unwrapProfile(response.data)
 }
 
+export async function sendEmailVerificationCode(): Promise<string> {
+  const response = await apiClient.post<ApiEnvelope<unknown>>('/api/me/email-verification/send')
+  return response.data.message || 'Mã xác thực đã được gửi.'
+}
+
+export async function verifyEmailCode(code: string): Promise<string> {
+  const response = await apiClient.post<ApiEnvelope<unknown>>('/api/me/email-verification/verify', { code })
+  return response.data.message || 'Xác thực email thành công!'
+}
+
 const errors: Record<string, string> = {
   PROFILE_USERNAME_INVALID: 'Use 6–64 characters: letters, numbers, *, -, . or _. The name cannot start with punctuation or contain restricted patterns.',
   PROFILE_USERNAME_EMAIL_LIKE: 'Your username cannot match the first part of your email address.',

@@ -1,22 +1,25 @@
 import { useEffect, useState } from 'react'
+import type { ReactNode } from 'react'
 import { Link, NavLink } from 'react-router-dom'
 import { useAuth } from '../authentication/useAuth'
 import { EditAvatarDialog } from './EditAvatarDialog'
 import { EditUsernameDialog } from './EditUsernameDialog'
+import { VerifyEmailDialog } from './VerifyEmailDialog'
 import { getProfile, isCanceled, isUnauthorized, profileErrorMessage, updateProfile } from './profileApi'
 import { Icon, ProfileAvatar, primaryButton } from './ProfileUi'
 import type { BuyerProfile, UpdateProfileRequest } from './types'
 
-type ActiveModal = 'username' | 'photo' | null
+type ActiveModal = 'username' | 'photo' | 'verifyEmail' | null
 
 type LoadState = 'loading' | 'ready' | 'error'
 
-function Row({ icon, label, value, description, action }: {
+function Row({ icon, label, value, description, action, customAction }: {
   icon: 'user' | 'mail' | 'phone'
   label: string
   value: string
   description?: string
   action?: () => void
+  customAction?: ReactNode
 }) {
   return (
     <div className="flex flex-col gap-3 px-5 py-5 sm:flex-row sm:items-center sm:gap-5 sm:px-7 sm:py-6">
@@ -28,7 +31,9 @@ function Row({ icon, label, value, description, action }: {
         <p className="mt-1 break-words text-[15px] font-semibold text-[#191919]">{value}</p>
         {description && <p className="mt-1 text-xs leading-5 text-[#76808d]">{description}</p>}
       </div>
-      {action ? (
+      {customAction ? (
+        customAction
+      ) : action ? (
         <button className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-full px-2 py-1.5 text-sm font-bold text-[#3665f3] hover:bg-[#f0f5ff] focus-visible:outline-2 focus-visible:outline-[#3665f3] sm:self-auto"
           onClick={action} type="button" aria-label={`Edit ${label.toLowerCase()}`}>
           <Icon name="edit" size={15} /> Edit
@@ -182,7 +187,32 @@ export function ProfilePage() {
                     description="Visible to other members on eBay. Changes are limited to once every 30 days."
                     action={() => { setNotice(''); setModal('username') }} />
                   <Row icon="mail" label="Email address" value={profile.email}
-                    description={profile.emailVerified ? 'Email verified' : 'Email not verified'} />
+                    description={profile.emailVerified ? 'Email has been verified.' : 'Verify your email to secure your account and access all features.'}
+                    customAction={
+                      profile.emailVerified ? (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                            <Icon name="check" size={13} /> Verified
+                          </span>
+                          <button
+                            className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-[#3665f3]"
+                            onClick={() => { setNotice(''); setModal('verifyEmail') }}
+                            type="button"
+                            title="Gửi lại mã OTP qua email để test"
+                          >
+                            <Icon name="mail" size={13} /> Gửi lại mã OTP
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-full bg-[#3665f3] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-[#234aca] focus-visible:outline-2 focus-visible:outline-[#3665f3] sm:self-auto"
+                          onClick={() => { setNotice(''); setModal('verifyEmail') }}
+                          type="button"
+                        >
+                          <Icon name="mail" size={14} /> Verify Email
+                        </button>
+                      )
+                    } />
                   <Row icon="phone" label="Phone number" value={profile.phoneNumber || 'Not provided'}
                     description={profile.phoneVerified ? 'Phone verified' : 'This field cannot be edited from Buyer Profile.'} />
                 </div>
@@ -207,6 +237,16 @@ export function ProfilePage() {
       {profile && modal === 'photo' && (
         <EditAvatarDialog username={profile.username} currentUrl={profile.avatarUrl}
           onClose={() => setModal(null)} onSave={saveProfile} />
+      )}
+      {profile && modal === 'verifyEmail' && (
+        <VerifyEmailDialog
+          email={profile.email}
+          onClose={() => setModal(null)}
+          onVerified={() => {
+            setProfile((prev) => prev ? { ...prev, emailVerified: true } : prev)
+            setNotice('Email của bạn đã được xác thực thành công!')
+          }}
+        />
       )}
     </div>
   )

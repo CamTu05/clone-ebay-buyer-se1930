@@ -1,5 +1,6 @@
 import { createBrowserRouter } from 'react-router-dom'
 import { LoginPage } from '../features/authentication/LoginPage'
+import { RegisterPage } from '../features/authentication/RegisterPage'
 import { ProtectedRoute } from '../features/authentication/ProtectedRoute'
 import { CatalogPage } from '../features/catalog/CatalogPage'
 import { FeaturePlaceholderPage } from '../shared/components/FeaturePlaceholderPage'
@@ -21,6 +22,7 @@ export const router = createBrowserRouter([
       { path: 'catalog', element: <CatalogPage /> },
       { path: 'products/:productId', element: <ProductDetailPage /> },
       { path: 'login', element: <LoginPage /> },
+      { path: 'register', element: <RegisterPage /> },
       {
         element: <ProtectedRoute />,
         children: [
