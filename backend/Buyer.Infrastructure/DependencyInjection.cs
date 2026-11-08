@@ -62,6 +62,12 @@ public static class DependencyInjection
         services.AddScoped<IProfileService, ProfileService>();
         services.AddScoped<ICartService, CartService>();
 
+        // EMAIL VERIFICATION
+        services.Configure<Buyer.Infrastructure.Email.SmtpOptions>(
+            configuration.GetSection(Buyer.Infrastructure.Email.SmtpOptions.SectionName));
+        services.AddScoped<Buyer.Application.Email.IEmailSender, Buyer.Infrastructure.Email.SmtpEmailSender>();
+        services.AddScoped<Buyer.Application.Email.IEmailVerificationService, Buyer.Infrastructure.Email.EmailVerificationService>();
+
         return services;
     }
 }

@@ -12,6 +12,19 @@ export interface LoginRequest {
   password: string
 }
 
+export interface RegisterRequest {
+  email: string
+  password: string
+  username: string
+}
+
+export interface RegisterData {
+  accessToken: string
+  tokenType: string
+  expiresAt: string
+  user: AuthUser
+}
+
 export interface LoginData {
   accessToken: string
   tokenType: string

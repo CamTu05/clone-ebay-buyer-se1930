@@ -6,6 +6,65 @@ public sealed class AuthService(
     IAccessTokenGenerator tokens,
     IClock clock) : IAuthService
 {
+    public async Task<RegisterResult> RegisterAsync(
+        RegisterRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(request.Email)
+            || string.IsNullOrWhiteSpace(request.Password)
+            || string.IsNullOrWhiteSpace(request.Username))
+        {
+            return RegisterResult.Failed(RegisterFailure.ValidationFailed, "Email, password, and username are required.");
+        }
+
+        var normalizedEmail = request.Email.Trim().ToUpperInvariant();
+        if (await users.ExistsByNormalizedEmailAsync(normalizedEmail, cancellationToken))
+        {
+            return RegisterResult.Failed(RegisterFailure.EmailAlreadyExists, "An account with this email already exists.");
+        }
+
+        var normalizedUsername = request.Username.Trim().ToUpperInvariant();
+        if (await users.ExistsByNormalizedUsernameAsync(normalizedUsername, cancellationToken))
+        {
+            return RegisterResult.Failed(RegisterFailure.UsernameAlreadyExists, "This username is already taken.");
+        }
+
+        // Use a dummy AuthUser to hash the password through the existing IPasswordVerifier
+        var dummyUser = new AuthUser(0, request.Email.Trim().ToLowerInvariant(), request.Username.Trim(), null, "BUYER", "ACTIVE", false, false);
+        var passwordHash = passwords.Hash(dummyUser, request.Password);
+
+        var userId = await users.CreateAsync(
+            request.Email.Trim().ToLowerInvariant(),
+            request.Username.Trim(),
+            passwordHash,
+            "BUYER",
+            "ACTIVE",
+            clock.UtcNow,
+            cancellationToken);
+
+        var createdUser = new AuthUser(
+            userId,
+            request.Email.Trim().ToLowerInvariant(),
+            request.Username.Trim(),
+            passwordHash,
+            "BUYER",
+            "ACTIVE",
+            false,
+            false);
+
+        var token = tokens.Generate(createdUser);
+
+        return RegisterResult.Success(new RegisterResponse(
+            token.Value,
+            "Bearer",
+            token.ExpiresAtUtc,
+            new RegisteredUser(
+                userId,
+                request.Username.Trim(),
+                request.Email.Trim().ToLowerInvariant(),
+                "BUYER")));
+    }
+
     public async Task<LoginResult> LoginAsync(
         LoginRequest request,
         CancellationToken cancellationToken = default)

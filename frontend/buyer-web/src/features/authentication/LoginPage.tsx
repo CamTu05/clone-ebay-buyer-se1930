@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { Navigate, useLocation, useNavigate, Link } from 'react-router-dom'
 import { ErrorMessage } from '../../shared/components/ErrorMessage'
 import { getLoginErrorMessage } from './authApi'
 import { useAuth } from './useAuth'
@@ -80,6 +80,12 @@ export function LoginPage() {
             {isSubmitting ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
+        <p className="mt-6 text-center text-sm text-slate-600">
+          Don't have an account?{' '}
+          <Link to="/register" className="font-semibold text-blue-700 hover:underline">
+            Register
+          </Link>
+        </p>
       </section>
     </div>
   )

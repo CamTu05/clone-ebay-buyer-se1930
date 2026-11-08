@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { setAccessToken } from '../../shared/api/apiClient'
-import { login as loginRequest } from './authApi'
+import { login as loginRequest, register as registerRequest } from './authApi'
 import { AuthContext } from './authContextValue'
 import type { AuthContextValue } from './authContextValue'
 import type { AuthUser } from './types'
@@ -37,14 +37,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     scheduleExpiration()
   }, [logout])
 
+  const register = useCallback<AuthContextValue['register']>(async (data) => {
+    const result = await registerRequest(data)
+    const expiresAt = Date.parse(result.expiresAt)
+    if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) throw new Error('Invalid register response')
+
+    if (expirationTimer.current) clearTimeout(expirationTimer.current)
+    setAccessToken(result.accessToken, result.tokenType)
+    setUser(result.user)
+
+    const scheduleExpiration = () => {
+      const remaining = expiresAt - Date.now()
+      if (remaining <= 0) {
+        logout()
+        return
+      }
+      expirationTimer.current = setTimeout(scheduleExpiration, Math.min(remaining, 2_147_483_647))
+    }
+    scheduleExpiration()
+  }, [logout])
+
   useEffect(() => logout, [logout])
 
   const value = useMemo<AuthContextValue>(() => ({
     user,
     isAuthenticated: user !== null,
     login,
+    register,
     logout,
-  }), [login, logout, user])
+  }), [login, register, logout, user])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

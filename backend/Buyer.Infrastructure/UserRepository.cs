@@ -1,5 +1,6 @@
 using Buyer.Application.Authentication;
 using Buyer.Infrastructure.Data;
+using Buyer.Infrastructure.Data.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Buyer.Infrastructure.Authentication;
@@ -23,6 +24,52 @@ public sealed class UserRepository(CloneEbayDbContext dbContext) : IUserReposito
                 user.emailVerified,
                 user.phoneVerified))
             .SingleOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<bool> ExistsByNormalizedEmailAsync(
+        string normalizedEmail,
+        CancellationToken cancellationToken)
+    {
+        return await dbContext.Users
+            .AsNoTracking()
+            .AnyAsync(user => user.email.Trim().ToUpper() == normalizedEmail, cancellationToken);
+    }
+
+    public async Task<bool> ExistsByNormalizedUsernameAsync(
+        string normalizedUsername,
+        CancellationToken cancellationToken)
+    {
+        return await dbContext.Users
+            .AsNoTracking()
+            .AnyAsync(user => user.username.Trim().ToUpper() == normalizedUsername, cancellationToken);
+    }
+
+    public async Task<int> CreateAsync(
+        string email,
+        string username,
+        string passwordHash,
+        string role,
+        string accountStatus,
+        DateTime createdAtUtc,
+        CancellationToken cancellationToken)
+    {
+        var user = new User
+        {
+            email = email,
+            username = username,
+            passwordHash = passwordHash,
+            role = role,
+            accountStatus = accountStatus,
+            createdAt = createdAtUtc,
+            updatedAt = createdAtUtc,
+            emailVerified = false,
+            phoneVerified = false
+        };
+
+        dbContext.Users.Add(user);
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        return user.id;
     }
 
     public async Task RecordSuccessfulLoginAsync(

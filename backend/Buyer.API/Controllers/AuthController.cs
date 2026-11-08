@@ -8,6 +8,30 @@ namespace Buyer.API.Controllers;
 [Route("api/auth")]
 public sealed class AuthController(IAuthService authService) : ControllerBase
 {
+    [HttpPost("register")]
+    [ProducesResponseType<ApiEnvelope<RegisterResponse>>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ApiEnvelope<object>>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ApiEnvelope<object>>(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Register(RegisterRequest request, CancellationToken cancellationToken)
+    {
+        var result = await authService.RegisterAsync(request, cancellationToken);
+        if (result.IsSuccess)
+        {
+            return StatusCode(StatusCodes.Status201Created,
+                ApiEnvelope<RegisterResponse>.Succeeded(result.Value!, "Registration successful"));
+        }
+
+        return result.Failure switch
+        {
+            RegisterFailure.EmailAlreadyExists => Conflict(
+                ApiEnvelope<object>.Failure("AUTH_EMAIL_EXISTS", result.ErrorMessage ?? "Email already exists")),
+            RegisterFailure.UsernameAlreadyExists => Conflict(
+                ApiEnvelope<object>.Failure("AUTH_USERNAME_EXISTS", result.ErrorMessage ?? "Username already taken")),
+            _ => BadRequest(
+                ApiEnvelope<object>.Failure("AUTH_VALIDATION_FAILED", result.ErrorMessage ?? "Validation failed"))
+        };
+    }
+
     [HttpPost("login")]
     [EnableRateLimiting("Login")]
     [ProducesResponseType<ApiEnvelope<LoginResponse>>(StatusCodes.Status200OK)]

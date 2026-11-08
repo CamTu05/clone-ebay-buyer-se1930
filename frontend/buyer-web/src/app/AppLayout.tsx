@@ -46,7 +46,10 @@ export function AppLayout() {
                 <button className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold hover:bg-slate-100" type="button" onClick={handleLogout}>Logout</button>
               </div>
             ) : (
-              <NavLink className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800" to="/login">Login</NavLink>
+              <div className="flex items-center gap-2">
+                <NavLink className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100" to="/login">Login</NavLink>
+                <NavLink className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800" to="/register">Register</NavLink>
+              </div>
             )}
           </div>
         </div>
