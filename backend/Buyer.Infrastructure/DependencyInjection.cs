@@ -1,13 +1,13 @@
-using Buyer.Application.Addresses;
-using Buyer.Application.Catalog;
-using Buyer.Application.Authentication;
-using Buyer.Application.Features.Profile;
-using Buyer.Application.Features.Cart;
+using Buyer.Application.Interfaces.Addresses;
+using Buyer.Application.Interfaces.ListingCatalog;
+using Buyer.Application.Interfaces.Authentication;
+using Buyer.Application.Interfaces.Profile;
+using Buyer.Application.Interfaces.Cart;
 using Buyer.Infrastructure.Authentication;
-using Buyer.Infrastructure.Catalog;
-using Buyer.Infrastructure.Data;
+using Buyer.Infrastructure.Repositories.ListingCatalog;
+using Buyer.Infrastructure.Repositories.Addresses;
 using Buyer.Infrastructure.Data.Models;
-using Buyer.Infrastructure.Profiles;
+using Buyer.Infrastructure.Repositories.Profile;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -31,17 +31,16 @@ public static class DependencyInjection
         if (!string.IsNullOrWhiteSpace(connectionString))
         {
             services.AddDbContext<CloneEbayDbContext>(options => options.UseSqlServer(connectionString));
-            services.AddScoped<IProductRepository, ProductRepository>();
-            services.AddScoped<IProductCatalogRepository, ProductCatalogRepository>();
+            services.AddScoped<IListingCatalogRepository, ListingCatalogRepository>();
             services.AddScoped<ICartRepository, CartRepository>();
             services.AddScoped<IAddressRepository, AddressRepository>();
         }
         else
         {
-            services.AddScoped<IProductRepository, UnavailableProductRepository>();
             services.AddScoped<IAddressRepository, UnavailableAddressRepository>();
         }
 
+        services.AddScoped<IAddressService, AddressService>();
         services.AddOptions<JwtOptions>()
             .Bind(configuration.GetSection(JwtOptions.SectionName))
             .Validate(options => !string.IsNullOrWhiteSpace(options.Issuer), "Jwt:Issuer is required")
@@ -55,7 +54,7 @@ public static class DependencyInjection
         services.AddScoped<IPasswordVerifier, PasswordVerifier>();
         services.AddScoped<IAccessTokenGenerator, JwtAccessTokenGenerator>();
         services.AddScoped<IAuthService, AuthService>();
-        services.AddScoped<IProductCatalogService, ProductCatalogService>();
+        services.AddScoped<IListingCatalogService, ListingCatalogService>();
 
         //PROFILE - EBAY-20
         services.AddScoped<IProfileRepository, ProfileRepository>();
@@ -65,8 +64,8 @@ public static class DependencyInjection
         // EMAIL VERIFICATION
         services.Configure<Buyer.Infrastructure.Email.SmtpOptions>(
             configuration.GetSection(Buyer.Infrastructure.Email.SmtpOptions.SectionName));
-        services.AddScoped<Buyer.Application.Email.IEmailSender, Buyer.Infrastructure.Email.SmtpEmailSender>();
-        services.AddScoped<Buyer.Application.Email.IEmailVerificationService, Buyer.Infrastructure.Email.EmailVerificationService>();
+        services.AddScoped<Buyer.Application.Interfaces.Email.IEmailSender, Buyer.Infrastructure.Email.SmtpEmailSender>();
+        services.AddScoped<Buyer.Application.Interfaces.Email.IEmailVerificationService, Buyer.Infrastructure.Email.EmailVerificationService>();
 
         return services;
     }

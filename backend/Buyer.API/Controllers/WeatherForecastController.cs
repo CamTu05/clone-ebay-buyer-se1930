@@ -1,1 +1,0 @@
-namespace Buyer.API.Controllers;

@@ -1,3 +1,3 @@
-﻿namespace Buyer.Domain;
+namespace Buyer.Domain;
 
 public sealed class AssemblyMarker;

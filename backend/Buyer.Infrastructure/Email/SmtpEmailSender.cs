@@ -1,6 +1,6 @@
 using System.Net;
 using System.Net.Mail;
-using Buyer.Application.Email;
+using Buyer.Application.Interfaces.Email;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 

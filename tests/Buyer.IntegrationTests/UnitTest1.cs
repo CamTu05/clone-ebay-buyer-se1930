@@ -42,7 +42,8 @@ public sealed class HealthEndpointTests : IClassFixture<WebApplicationFactory<Pr
         using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         var paths = document.RootElement.GetProperty("paths");
         Assert.True(paths.TryGetProperty("/api/auth/login", out _));
-        Assert.True(paths.TryGetProperty("/api/products/{productId}", out _));
+        Assert.True(paths.TryGetProperty("/api/listings/{listingId}", out _));
+        Assert.False(paths.TryGetProperty("/api/products/{productId}", out _));
         Assert.True(paths.TryGetProperty("/api/addresses", out _));
         Assert.True(document.RootElement.GetProperty("components").GetProperty("schemas").TryGetProperty("ApiError", out _));
     }

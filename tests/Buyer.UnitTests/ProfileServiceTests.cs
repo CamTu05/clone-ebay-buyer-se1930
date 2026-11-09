@@ -1,5 +1,5 @@
-using Buyer.Application.Features.Profile;
-using Buyer.Application.Features.Profile.DTOs;
+using Buyer.Application.Interfaces.Profile;
+using Buyer.Application.DTOs.Profile;
 
 namespace Buyer.UnitTests;
 
@@ -34,8 +34,11 @@ public sealed class ProfileServiceTests
     [InlineData("BUYER", "SUSPENDED")]
     public async Task UpdateRejectsWrongRoleOrState(string role, string status)
     {
-        var repo = new FakeRepository { User = Buyer with
-            { Role = role, AccountStatus = status } };
+        var repo = new FakeRepository
+        {
+            User = Buyer with
+            { Role = role, AccountStatus = status }
+        };
         var result = await new ProfileService(repo)
             .UpdateProfileAsync(12, new() { AvatarUrl = "https://example.com/new.png" });
         Assert.Equal(ProfileFailure.AccountUnavailable, result.Failure);

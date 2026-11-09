@@ -79,11 +79,11 @@ docker compose up --build
 
 The Compose configuration is intended for local development and requires Docker Desktop.
 
-## Product catalog
+## Listing catalog
 
-Open `/catalog` to browse available products with names, VND prices, images, and server-side pagination. Missing/broken images use a placeholder; empty pages and API failures have dedicated states with recovery actions.
+Open `/catalog` to browse available listings with titles, VND prices, images, and server-side pagination. Missing/broken images use a placeholder; empty pages and API failures have dedicated states with recovery actions.
 
-The public endpoint is `GET /api/products?page=1&pageSize=20` (`pageSize` up to 100). It reads the existing database-first schema through a repository and returns one entry per product with the cheapest eligible listing. Auction prices are labeled as the current bid. See `docs/04_API_Contract_Clone_eBay_Buyer.md`, section 3.2, for availability and price selection rules.
+The public endpoint is `GET /api/listings?page=1&pageSize=20` (`pageSize` up to 100). Each result represents one active Listing; Product supplies card metadata. Fixed-price listings use `Listing.price`, while auctions use `Auction.currentPrice`.
 
 Catalog data requires the existing SQL Server database through `ConnectionStrings__BuyerDatabase`, plus the existing JWT startup settings including `Jwt__SigningKey`. No database is created and no seed data is inserted by this feature.
 

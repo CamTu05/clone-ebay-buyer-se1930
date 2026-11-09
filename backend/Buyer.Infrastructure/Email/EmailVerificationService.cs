@@ -1,4 +1,5 @@
-using Buyer.Application.Email;
+using Buyer.Application.DTOs.Email;
+using Buyer.Application.Interfaces.Email;
 using Buyer.Infrastructure.Data;
 using Buyer.Infrastructure.Data.Models;
 using Microsoft.EntityFrameworkCore;

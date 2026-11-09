@@ -3,7 +3,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Text;
-using Buyer.Application.Features.Cart;
+using Buyer.Application.Interfaces.Cart;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;

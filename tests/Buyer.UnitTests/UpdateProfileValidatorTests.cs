@@ -1,5 +1,5 @@
-using Buyer.Application.Features.Profile;
-using Buyer.Application.Features.Profile.DTOs;
+using Buyer.Application.Interfaces.Profile;
+using Buyer.Application.DTOs.Profile;
 
 namespace Buyer.UnitTests;
 
@@ -45,7 +45,8 @@ public sealed class UpdateProfileValidatorTests
     {
         var errors = UpdateProfileValidator.Validate(new()
         {
-            ClearAvatar = true, AvatarUrl = "https://example.com/photo.png"
+            ClearAvatar = true,
+            AvatarUrl = "https://example.com/photo.png"
         });
         Assert.Contains(errors, x => x.Code == "PROFILE_AVATAR_ACTION_CONFLICT");
     }

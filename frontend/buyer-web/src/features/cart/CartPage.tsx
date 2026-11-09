@@ -78,7 +78,7 @@ export function CartPage() {
               {item.imageUrl ? <img className="h-full w-full object-contain" src={item.imageUrl} alt="" /> : <div className="flex h-full items-center justify-center text-sm text-slate-500">No image</div>}
             </div>
             <div className="min-w-0 flex-1 space-y-2">
-              <Link className="text-lg font-semibold hover:underline" to={`/products/${item.productId}`}>{item.title}</Link>
+              <Link className="text-lg font-semibold hover:underline" to={`/listings/${item.listingId}`}>{item.title}</Link>
               <p className="text-sm text-slate-600">Seller: {item.seller.storeName ?? item.seller.username}</p>
               <p>{priceFormat.format(item.unitPrice)} each</p>
               {!item.isAvailable && <p className="font-medium text-red-700">This item is currently unavailable.</p>}

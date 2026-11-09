@@ -1,10 +1,11 @@
-using Buyer.Application.Catalog;
-using Buyer.Application.Addresses;
+using Buyer.Application.Interfaces.ListingCatalog;
+using Buyer.Application.Interfaces.Addresses;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using System.Threading.RateLimiting;
 using Buyer.API.Controllers;
 using Buyer.API.Middlewares;
+using Buyer.API.Filters;
 using Buyer.Infrastructure;
 using Buyer.Infrastructure.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -14,7 +15,7 @@ using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers().ConfigureApiBehaviorOptions(options =>
+builder.Services.AddControllers(options => options.SuppressAsyncSuffixInActionNames = false).ConfigureApiBehaviorOptions(options =>
 {
     options.InvalidModelStateResponseFactory = context =>
     {
@@ -27,7 +28,6 @@ builder.Services.AddControllers().ConfigureApiBehaviorOptions(options =>
             new ApiEnvelope<object>(false, "Validation failed", null, errors));
     };
 });
-builder.Services.AddScoped<ProductService>();
 builder.Services.AddScoped<AddressService>();
 builder.Services.AddScoped<AddressExceptionFilter>();
 builder.Services.AddEndpointsApiExplorer();
