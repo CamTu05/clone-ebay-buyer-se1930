@@ -5,8 +5,8 @@ using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Text;
 using Buyer.API.Controllers;
-using Buyer.Application.Addresses;
-using Buyer.Infrastructure.Data;
+using Buyer.Application.Interfaces.Addresses;
+using Buyer.Infrastructure.Repositories.Addresses;
 using Buyer.Infrastructure.Data.Models;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -88,7 +88,7 @@ public sealed class AddressEndpointTests
         Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
         var login = await client.PostAsJsonAsync("/api/auth/login", new { email = "buyer@example.test", password = "TestBuyer@2026!" });
         Assert.Equal(HttpStatusCode.OK, login.StatusCode);
-        var body = await login.Content.ReadFromJsonAsync<ApiEnvelope<Buyer.Application.Authentication.LoginResponse>>();
+        var body = await login.Content.ReadFromJsonAsync<ApiEnvelope<Buyer.Application.DTOs.Authentication.LoginResponse>>();
         Assert.True(body!.Success);
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", body.Data!.AccessToken);
         Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/api/addresses")).StatusCode);
@@ -148,7 +148,12 @@ public sealed class AddressEndpointTests
         using var other = factory.Client(2);
         var response = await owner.PostAsJsonAsync("/api/addresses?userId=2", new
         {
-            userId = 2, fullName = "Buyer", phone = "0901234567", street = "Main street", city = "Hanoi", countryCode = "VN"
+            userId = 2,
+            fullName = "Buyer",
+            phone = "0901234567",
+            street = "Main street",
+            city = "Hanoi",
+            countryCode = "VN"
         });
         var address = (await response.Content.ReadFromJsonAsync<ApiEnvelope<AddressResponse>>())!.Data!;
         Assert.Empty((await other.GetFromJsonAsync<ApiEnvelope<AddressResponse[]>>("/api/addresses"))!.Data!);

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Buyer.Infrastructure.Data.Models;
 using Microsoft.EntityFrameworkCore;

@@ -73,8 +73,8 @@
 | Address | GET/POST | `/api/addresses` | JWT | P0 | IMPLEMENTED | TBD |
 | Address | GET/PATCH/DELETE | `/api/addresses/{addressId}` | JWT/owner | P0 | IMPLEMENTED | TBD |
 | Address | PATCH | `/api/addresses/{addressId}/default` | JWT/owner | P0 | IMPLEMENTED | TBD |
-| Catalog | GET | `/api/products` | Public | P0 | TESTED | MQuynh |
-| Catalog | GET | `/api/products/{productId}` | Public | P0 | IMPLEMENTED | TBD |
+| Listing Catalog | GET | `/api/listings` | Public | P0 | TESTED | MQuynh |
+| Listing Detail | GET | `/api/listings/{listingId}` | Public | P0 | IMPLEMENTED | TBD |
 | Listing | GET | `/api/listings/{listingId}` | Public | P0 | PROPOSED | TBD |
 | Cart | GET | `/api/cart` | JWT/BUYER | P0 | IMPLEMENTED | TBD |
 | Cart | POST | `/api/cart/items` | JWT | P0 | PROPOSED | TBD |
@@ -173,14 +173,14 @@ Implemented policy assumptions:
 
 ### 3.2 Catalog — Available product list
 
-#### `GET /api/products?page=1&pageSize=20`
+#### `GET /api/listings?page=1&pageSize=20`
 
 | Field | Value |
 |---|---|
 | Owner | MQuynh |
 | Authentication | Public; existing API rate limit applies |
 | Query | `page`: integer >= 1, default 1; `pageSize`: integer 1–100, default 20 |
-| Success | `200 OK`, standard envelope with `ProductPageResponse` |
+| Success | `200 OK`, standard envelope with `ListingPageResponse` |
 | Validation | `400 Bad Request`, `VALIDATION_ERROR` for invalid pagination |
 | Rate limited | `429 Too Many Requests`, `RATE_LIMIT_EXCEEDED` |
 | Unexpected failure | `500 Internal Server Error`, `INTERNAL_ERROR`; no database/exception details in response |

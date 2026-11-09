@@ -1,14 +1,12 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using Buyer.Application.Email;
-using Buyer.Application.Features.Profile;
-using Buyer.Application.Features.Profile.DTOs;
+using Buyer.Application.Interfaces.Email;
+using Buyer.Application.Interfaces.Profile;
+using Buyer.Application.DTOs.Profile;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Buyer.API.Controllers;
-
-public sealed record VerifyEmailCodeRequest(string Code);
 
 [ApiController]
 [Authorize(Roles = "BUYER")]
@@ -19,7 +17,7 @@ public sealed class ProfileController(
 {
     [HttpGet]
     [ProducesResponseType(typeof(ApiEnvelope<ProfileResponse>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Get(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetAsync(CancellationToken cancellationToken)
     {
         if (!TryUserId(out int userId)) return Unauthorized(
             ApiEnvelope<object>.Failure("AUTH_UNAUTHORIZED"));
@@ -30,7 +28,7 @@ public sealed class ProfileController(
 
     [HttpPatch]
     [ProducesResponseType(typeof(ApiEnvelope<ProfileResponse>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Patch(
+    public async Task<IActionResult> PatchAsync(
         [FromBody] UpdateProfileRequest request,
         CancellationToken cancellationToken)
     {

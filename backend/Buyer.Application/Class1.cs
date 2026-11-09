@@ -1,3 +1,3 @@
-﻿namespace Buyer.Application;
+namespace Buyer.Application;
 
 public sealed class AssemblyMarker;

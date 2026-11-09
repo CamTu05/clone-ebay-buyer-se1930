@@ -1,8 +1,8 @@
-using Buyer.Application.Authentication;
-using Buyer.Application.Features.Profile;
-using Buyer.Infrastructure.Data;
+using Buyer.Application.Interfaces.Authentication;
+using Buyer.Application.Interfaces.Profile;
+using Buyer.Infrastructure.Repositories.Addresses;
 using Buyer.Infrastructure.Data.Models;
-using Buyer.Infrastructure.Profiles;
+using Buyer.Infrastructure.Repositories.Profile;
 using Microsoft.EntityFrameworkCore;
 
 namespace Buyer.IntegrationTests;

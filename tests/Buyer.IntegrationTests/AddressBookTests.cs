@@ -1,6 +1,6 @@
-using Buyer.Application.Addresses;
-using Buyer.Application.Authentication;
-using Buyer.Infrastructure.Data;
+using Buyer.Application.Interfaces.Addresses;
+using Buyer.Application.Interfaces.Authentication;
+using Buyer.Infrastructure.Repositories.Addresses;
 using Buyer.Infrastructure.Data.Models;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -152,9 +152,16 @@ public sealed class AddressBookTests : IAsyncLifetime
         {
             db.OrderTables.Add(new OrderTable
             {
-                buyerId = 1, sellerId = 2, addressId = first.Id, shippingFullName = "Original name",
-                shippingPhone = "0901234567", shippingStreet = "Original street", shippingCity = "Original city",
-                shippingCountry = "Vietnam", currency = "VND", status = "PENDING_PAYMENT"
+                buyerId = 1,
+                sellerId = 2,
+                addressId = first.Id,
+                shippingFullName = "Original name",
+                shippingPhone = "0901234567",
+                shippingStreet = "Original street",
+                shippingCity = "Original city",
+                shippingCountry = "Vietnam",
+                currency = "VND",
+                status = "PENDING_PAYMENT"
             });
             await db.SaveChangesAsync();
         }

@@ -1,3 +1,3 @@
-﻿namespace Buyer.Infrastructure;
+namespace Buyer.Infrastructure;
 
 internal sealed class AssemblyMarker;

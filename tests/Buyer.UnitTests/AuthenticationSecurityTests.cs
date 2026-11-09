@@ -1,13 +1,13 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using Buyer.Application.Authentication;
+using Buyer.Application.Interfaces.Authentication;
 using Buyer.Infrastructure.Authentication;
 using Buyer.Infrastructure.Data.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using ApplicationPasswordVerificationResult = Buyer.Application.Authentication.PasswordVerificationResult;
+using ApplicationPasswordVerificationResult = Buyer.Application.Common.Authentication.PasswordVerificationResult;
 
 namespace Buyer.UnitTests;
 

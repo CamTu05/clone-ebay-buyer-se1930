@@ -1,4 +1,4 @@
-using Buyer.Application.Features.Cart;
+using Buyer.Application.Interfaces.Cart;
 
 namespace Buyer.UnitTests;
 

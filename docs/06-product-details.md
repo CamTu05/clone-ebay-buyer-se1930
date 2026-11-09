@@ -4,9 +4,9 @@ Implementation scope: public product details and a minimal paginated catalog so 
 
 ## Contract implemented for this feature
 
-`GET /api/products?page=1&pageSize=20` returns the standard success envelope with `data: { items, page, pageSize, totalItems, totalPages }`. Each item contains `productId`, `listingId`, `name`, `price`, nullable `imageUrl`, and `listingType`. The list retains the availability and pricing rules in section 3.2 of `04_API_Contract_Clone_eBay_Buyer.md`; details use the public-listing rules below. Page starts at 1; pageSize is 1–100. Invalid pagination returns 400.
+`GET /api/listings?page=1&pageSize=20` returns the standard success envelope with `data: { items, page, pageSize, totalItems, totalPages }`. Each item represents one Listing and includes its Product metadata, effective price, seller, shipping, best-offer, and optional auction fields. Page starts at 1; pageSize is 1–100. Invalid pagination returns 400.
 
-`GET /api/products/{productId}` returns the standard success envelope with:
+`GET /api/listings/{listingId}` returns the standard success envelope with:
 
 ```json
 {
@@ -38,7 +38,7 @@ Images are ordered by primary image first, then sortOrder and ID. Frontend accep
 
 ## Architecture
 
-React → Axios → ProductsController → ProductService → IProductRepository → ProductRepository → CloneEbayDbContext. EF access remains in Infrastructure. The application contracts expose DTOs, not scaffolded entities. If SQL is not configured, an unavailable repository keeps health endpoints usable while catalog requests report 503.
+React → Axios → ListingsController → IListingCatalogService → ListingCatalogService → IListingCatalogRepository → ListingCatalogRepository → CloneEbayDbContext. EF access remains in Infrastructure. The application contracts expose DTOs, not scaffolded entities. If SQL is not configured, an unavailable repository keeps health endpoints usable while catalog requests report 503.
 
 ## Manual acceptance checks with an existing database
 
