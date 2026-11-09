@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace Buyer.Infrastructure.Data.Models;
@@ -7,7 +7,7 @@ public partial class Payment
 {
     public long id { get; set; }
 
-    public long orderId { get; set; }
+    public long checkoutGroupId { get; set; }
 
     public decimal amount { get; set; }
 
@@ -25,7 +25,5 @@ public partial class Payment
 
     public DateTime? paidAt { get; set; }
 
-    public DateTime? refundedAt { get; set; }
-
-    public virtual OrderTable order { get; set; } = null!;
+    public virtual CheckoutGroup checkoutGroup { get; set; } = null!;
 }

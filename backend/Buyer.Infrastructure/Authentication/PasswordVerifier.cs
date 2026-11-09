@@ -44,7 +44,6 @@ public sealed class PasswordVerifier : IPasswordVerifier
         passwordHash = user.PasswordHash,
         role = user.Role,
         accountStatus = user.AccountStatus,
-        emailVerified = user.EmailVerified,
-        phoneVerified = user.PhoneVerified
+        emailVerified = user.EmailVerified
     };
 }

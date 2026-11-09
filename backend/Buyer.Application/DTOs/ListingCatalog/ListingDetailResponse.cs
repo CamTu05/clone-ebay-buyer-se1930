@@ -4,7 +4,7 @@ namespace Buyer.Application.DTOs.ListingCatalog;
 
 public sealed record ListingDetailResponse(
     int ListingId,
-    int ProductId,
+    int? ProductId,
     string Title,
     string? Description,
     string? Brand,
@@ -13,14 +13,10 @@ public sealed record ListingDetailResponse(
     IReadOnlyList<ProductImageResponse> Images,
     int SellerId,
     string SellerUsername,
-    decimal? SellerPositiveRate,
-    int? SellerFeedbackCount,
-    StoreSummaryResponse? Store,
     string ListingType,
     decimal EffectivePrice,
     decimal? BuyItNowPrice,
     int Quantity,
-    bool AllowBestOffer,
     ShippingSummaryResponse Shipping,
     AuctionDetailResponse? Auction,
     DateTime? PublishedAt);

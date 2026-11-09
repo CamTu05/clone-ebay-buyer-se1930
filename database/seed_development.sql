@@ -35,12 +35,11 @@ BEGIN TRY
         UPDATE dbo.[User]
         SET username = N'dev_buyer', passwordHash = @PasswordHash, role = N'BUYER',
             avatarURL = N'https://placehold.co/200x200?text=Buyer', phoneNumber = N'0900000001',
-            emailVerified = 1, phoneVerified = 1, accountStatus = N'ACTIVE', updatedAt = @Now,
-            lastUsernameChangedAt = NULL
+            emailVerified = 1, accountStatus = N'ACTIVE', updatedAt = @Now
         WHERE email = N'buyer.dev@example.test';
     ELSE
-        INSERT dbo.[User] (username, email, passwordHash, role, avatarURL, phoneNumber, emailVerified, phoneVerified, accountStatus, createdAt, updatedAt)
-        VALUES (N'dev_buyer', N'buyer.dev@example.test', @PasswordHash, N'BUYER', N'https://placehold.co/200x200?text=Buyer', N'0900000001', 1, 1, N'ACTIVE', @Now, @Now);
+        INSERT dbo.[User] (username, email, passwordHash, role, avatarURL, phoneNumber, emailVerified, accountStatus, createdAt, updatedAt)
+        VALUES (N'dev_buyer', N'buyer.dev@example.test', @PasswordHash, N'BUYER', N'https://placehold.co/200x200?text=Buyer', N'0900000001', 1, N'ACTIVE', @Now, @Now);
 
     SELECT @BuyerId = id FROM dbo.[User] WHERE email = N'buyer.dev@example.test';
 
@@ -48,12 +47,11 @@ BEGIN TRY
         UPDATE dbo.[User]
         SET username = N'dev_seller', passwordHash = @PasswordHash, role = N'SELLER',
             avatarURL = N'https://placehold.co/200x200?text=Seller', phoneNumber = N'0900000002',
-            emailVerified = 1, phoneVerified = 1, accountStatus = N'ACTIVE', updatedAt = @Now,
-            lastUsernameChangedAt = NULL
+            emailVerified = 1, accountStatus = N'ACTIVE', updatedAt = @Now
         WHERE email = N'seller.dev@example.test';
     ELSE
-        INSERT dbo.[User] (username, email, passwordHash, role, avatarURL, phoneNumber, emailVerified, phoneVerified, accountStatus, createdAt, updatedAt)
-        VALUES (N'dev_seller', N'seller.dev@example.test', @PasswordHash, N'SELLER', N'https://placehold.co/200x200?text=Seller', N'0900000002', 1, 1, N'ACTIVE', @Now, @Now);
+        INSERT dbo.[User] (username, email, passwordHash, role, avatarURL, phoneNumber, emailVerified, accountStatus, createdAt, updatedAt)
+        VALUES (N'dev_seller', N'seller.dev@example.test', @PasswordHash, N'SELLER', N'https://placehold.co/200x200?text=Seller', N'0900000002', 1, N'ACTIVE', @Now, @Now);
 
     SELECT @SellerId = id FROM dbo.[User] WHERE email = N'seller.dev@example.test';
 

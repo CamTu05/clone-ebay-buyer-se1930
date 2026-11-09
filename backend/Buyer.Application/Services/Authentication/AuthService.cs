@@ -29,7 +29,7 @@ public sealed class AuthService(
             return RegisterResult.Failed(RegisterFailure.UsernameAlreadyExists, "This username is already taken.");
         }
 
-        var dummyUser = new AuthUser(0, request.Email.Trim().ToLowerInvariant(), request.Username.Trim(), null, "BUYER", "ACTIVE", false, false);
+        var dummyUser = new AuthUser(0, request.Email.Trim().ToLowerInvariant(), request.Username.Trim(), null, "BUYER", "ACTIVE", false);
         var passwordHash = passwords.Hash(dummyUser, request.Password);
 
         var userId = await users.CreateAsync(
@@ -48,7 +48,6 @@ public sealed class AuthService(
             passwordHash,
             "BUYER",
             "ACTIVE",
-            false,
             false);
 
         var token = tokens.Generate(createdUser);
@@ -122,7 +121,6 @@ public sealed class AuthService(
                 user.Username,
                 user.Email,
                 user.Role,
-                user.EmailVerified,
-                user.PhoneVerified)));
+                user.EmailVerified)));
     }
 }

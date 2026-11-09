@@ -4,7 +4,6 @@ export interface AuthUser {
   email: string
   role: string
   emailVerified: boolean
-  phoneVerified: boolean
 }
 
 export interface LoginRequest {

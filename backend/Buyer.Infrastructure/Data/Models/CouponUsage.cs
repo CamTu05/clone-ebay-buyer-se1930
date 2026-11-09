@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace Buyer.Infrastructure.Data.Models;
@@ -9,17 +9,17 @@ public partial class CouponUsage
 
     public int couponId { get; set; }
 
-    public int? userId { get; set; }
+    public long checkoutGroupId { get; set; }
 
-    public long orderId { get; set; }
+    public int? userId { get; set; }
 
     public decimal discountAmount { get; set; }
 
     public DateTime usedAt { get; set; }
 
-    public virtual Coupon coupon { get; set; } = null!;
+    public virtual CheckoutGroup checkoutGroup { get; set; } = null!;
 
-    public virtual OrderTable order { get; set; } = null!;
+    public virtual Coupon coupon { get; set; } = null!;
 
     public virtual User? user { get; set; }
 }

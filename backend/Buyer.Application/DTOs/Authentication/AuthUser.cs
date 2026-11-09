@@ -7,5 +7,4 @@ public sealed record AuthUser(
     string? PasswordHash,
     string Role,
     string AccountStatus,
-    bool EmailVerified,
-    bool PhoneVerified);
+    bool EmailVerified);

@@ -19,10 +19,9 @@ public sealed class UserRepository(CloneEbayDbContext dbContext) : IUserReposito
                 user.email,
                 user.username,
                 user.passwordHash,
-                user.role,
-                user.accountStatus,
-                user.emailVerified,
-                user.phoneVerified))
+                 user.role,
+                 user.accountStatus,
+                 user.emailVerified))
             .SingleOrDefaultAsync(cancellationToken);
     }
 
@@ -62,8 +61,7 @@ public sealed class UserRepository(CloneEbayDbContext dbContext) : IUserReposito
             accountStatus = accountStatus,
             createdAt = createdAtUtc,
             updatedAt = createdAtUtc,
-            emailVerified = false,
-            phoneVerified = false
+            emailVerified = false
         };
 
         dbContext.Users.Add(user);

@@ -3,7 +3,7 @@ namespace Buyer.Application.DTOs.Cart;
 public sealed record CartItemResponse(
     int CartItemId,
     int ListingId,
-    int ProductId,
+    int? ProductId,
     string Title,
     string? ImageUrl,
     CartSellerResponse Seller,

@@ -11,10 +11,6 @@ namespace Buyer.Infrastructure.Repositories.Profile;
 public sealed class ProfileRepository(
     CloneEbayDbContext dbContext, IClock clock) : IProfileRepository
 {
-    private const int ReservationDays = 30;
-
-    // Shared DB-level lock: registration and any future username-allocation
-    // endpoint MUST follow the same lock protocol and reservation check.
     private const string UsernameAllocationLockSql = """
         DECLARE @result int;
         EXEC @result = sys.sp_getapplock
@@ -36,19 +32,17 @@ public sealed class ProfileRepository(
             .Where(user => user.id == userId)
             .Select(user => new ProfileUserSnapshot(
                 user.id, user.username, user.email, user.phoneNumber,
-                user.avatarURL, user.emailVerified, user.phoneVerified,
-                user.role, user.accountStatus, user.lastUsernameChangedAt))
+                user.avatarURL, user.emailVerified,
+                user.role, user.accountStatus))
             .SingleOrDefaultAsync(cancellationToken);
     }
 
-    // Advisory check only: SaveProfileAsync re-checks inside the transaction.
     public Task<bool> IsUsernameTakenAsync(
         string username, int excludeUserId,
         CancellationToken cancellationToken = default) =>
         string.IsNullOrWhiteSpace(username)
             ? Task.FromResult(true)
-            : UsernameUnavailableAsync(Normalize(username), excludeUserId,
-                clock.UtcNow, cancellationToken);
+            : UsernameUnavailableAsync(username, excludeUserId, cancellationToken);
 
     public async Task<ProfileSaveResult> SaveProfileAsync(
         ProfileChanges changes, CancellationToken cancellationToken = default)
@@ -61,15 +55,12 @@ public sealed class ProfileRepository(
             await using var transaction = await dbContext.Database
                 .BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
 
-            // Acquire a fixed resource FIRST to avoid name-allocation races.
             if (changes.NewUsername is not null)
             {
                 await dbContext.Database.ExecuteSqlRawAsync(
                     UsernameAllocationLockSql, cancellationToken);
             }
 
-            // Do not trust values read earlier by the Application service.
-            // UPDLOCK ensures another write to this user waits.
             var user = await dbContext.Users.FromSqlInterpolated($"""
                     SELECT * FROM dbo.[User] WITH (UPDLOCK, HOLDLOCK)
                     WHERE [id] = {changes.UserId}
@@ -97,33 +88,16 @@ public sealed class ProfileRepository(
             if (changeUsername)
             {
                 var newUsername = changes.NewUsername!;
-
-                // Validate again here: SaveProfileAsync may be called from
-                // other code, not exclusively ProfileService.
                 var validate = UpdateProfileValidator.Validate(
                     new() { Username = newUsername });
                 if (validate.Count != 0)
                     return new(ProfileSaveStatus.ConcurrentConflict);
 
-                if (user.lastUsernameChangedAt is { } lastChange &&
-                    nowUtc < lastChange.AddDays(ReservationDays))
-                    return new(ProfileSaveStatus.UsernameChangeRestricted);
-
-                if (await UsernameUnavailableAsync(Normalize(newUsername),
-                        user.id, nowUtc, cancellationToken))
+                if (await UsernameUnavailableAsync(
+                        newUsername, user.id, cancellationToken))
                     return new(ProfileSaveStatus.UsernameTaken);
 
-                var oldUsername = user.username;
-                user.username = newUsername;
-                user.lastUsernameChangedAt = nowUtc;
-                dbContext.UsernameChangeHistories.Add(new UsernameChangeHistory
-                {
-                    userId = user.id,
-                    oldUsername = oldUsername,
-                    newUsername = newUsername,
-                    changedAtUtc = nowUtc,
-                    oldUsernameReservedUntilUtc = nowUtc.AddDays(ReservationDays)
-                });
+                user.username = newUsername.Trim();
             }
 
             if (changes.ClearAvatar)
@@ -156,29 +130,18 @@ public sealed class ProfileRepository(
         }
     }
 
-    private async Task<bool> UsernameUnavailableAsync(
-        string normalizedName, int excludeUserId, DateTime nowUtc,
-        CancellationToken cancellationToken)
+    private Task<bool> UsernameUnavailableAsync(
+        string username, int excludeUserId, CancellationToken cancellationToken)
     {
-        bool active = await dbContext.Users.AsNoTracking().AnyAsync(
+        string normalizedName = username.Trim().ToUpper();
+        return dbContext.Users.AsNoTracking().AnyAsync(
             user => user.id != excludeUserId &&
-                    user.normalizedUsername == normalizedName,
-            cancellationToken);
-        if (active) return true;
-
-        // Intentional: reservation applies to EVERY account, including the
-        // former owner. Otherwise they can cycle back immediately.
-        return await dbContext.UsernameChangeHistories.AsNoTracking().AnyAsync(
-            history => history.normalizedOldUsername == normalizedName &&
-                       history.oldUsernameReservedUntilUtc > nowUtc,
+                    user.username.Trim().ToUpper() == normalizedName,
             cancellationToken);
     }
 
-    private static string Normalize(string username) =>
-        username.Trim().ToUpperInvariant();
-
     private static ProfileUserSnapshot ToSnapshot(User user) => new(
         user.id, user.username, user.email, user.phoneNumber,
-        user.avatarURL, user.emailVerified, user.phoneVerified,
-        user.role, user.accountStatus, user.lastUsernameChangedAt);
+        user.avatarURL, user.emailVerified,
+        user.role, user.accountStatus);
 }

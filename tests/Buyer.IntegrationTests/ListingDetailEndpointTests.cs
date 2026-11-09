@@ -90,7 +90,7 @@ public sealed class ListingDetailEndpointTests
             Detail = detail,
             Page = new ListingPageResponse([
                 new(27, 4, detail.Title, null, detail.Brand, detail.ItemCondition, detail.SellerId,
-                    detail.ListingType, detail.EffectivePrice, detail.AllowBestOffer, false,
+                    detail.ListingType, detail.EffectivePrice, false,
                     null, null, null, detail.PublishedAt)
             ], 1, 20, 1, 1)
         };
@@ -117,14 +117,10 @@ public sealed class ListingDetailEndpointTests
         [new ProductImageResponse(1, "https://example.com/camera.jpg", true, 0)],
         sellerId,
         $"seller-{sellerId}",
-        98.5m,
-        20,
-        new StoreSummaryResponse(1, "Camera Store", null),
         "FIXED_PRICE",
         price,
         price,
         2,
-        true,
         new ShippingSummaryResponse("FREE", [
             new ShippingOptionResponse(1, "Standard", "STANDARD", 0, 2, 4)
         ]),

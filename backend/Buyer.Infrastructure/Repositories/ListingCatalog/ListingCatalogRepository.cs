@@ -13,7 +13,7 @@ public sealed class ListingCatalogRepository(CloneEbayDbContext dbContext) : ILi
         DateTime utcNow,
         CancellationToken cancellationToken) =>
         GetAvailableListingsAsync(new ListingCatalogQuery(
-            null, null, null, null, null, null, null, null, null, null, null,
+            null, null, null, null, null, null, null, null, null, null,
             null, null, ListingCatalogSort.Newest, page, pageSize), utcNow, cancellationToken);
 
     public async Task<ListingCatalogPage> GetAvailableListingsAsync(
@@ -28,33 +28,31 @@ public sealed class ListingCatalogRepository(CloneEbayDbContext dbContext) : ILi
                 ? listing.Auction!.currentPrice
                 : listing.price!.Value,
             TitleMatch = query.SearchPattern != null &&
-                EF.Functions.Like(listing.product.title, query.SearchPattern, "\\"),
-            DescriptionMatch = query.SearchPattern != null && listing.product.description != null &&
-                EF.Functions.Like(listing.product.description, query.SearchPattern, "\\")
+                EF.Functions.Like(listing.title, query.SearchPattern, "\\"),
+            DescriptionMatch = query.SearchPattern != null && listing.description != null &&
+                EF.Functions.Like(listing.description, query.SearchPattern, "\\")
         });
 
         if (query.SearchPattern is not null)
             candidates = candidates.Where(item => item.TitleMatch || item.DescriptionMatch);
         if (query.CategoryId.HasValue)
-            candidates = candidates.Where(item => item.Listing.product.categoryId == query.CategoryId);
+            candidates = candidates.Where(item => item.Listing.categoryId == query.CategoryId);
         if (query.MinPrice.HasValue)
             candidates = candidates.Where(item => item.EffectivePrice >= query.MinPrice);
         if (query.MaxPrice.HasValue)
             candidates = candidates.Where(item => item.EffectivePrice <= query.MaxPrice);
         if (query.Condition is not null)
-            candidates = candidates.Where(item => item.Listing.product.itemCondition == query.Condition);
+            candidates = candidates.Where(item => item.Listing.itemCondition == query.Condition);
         if (query.Brand is not null)
-            candidates = candidates.Where(item => item.Listing.product.brand == query.Brand);
+            candidates = candidates.Where(item => item.Listing.product != null && item.Listing.product.brand == query.Brand);
         if (query.ListingType is not null)
             candidates = candidates.Where(item => item.Listing.listingType == query.ListingType);
         if (query.SellerId.HasValue)
             candidates = candidates.Where(item => item.Listing.sellerId == query.SellerId);
         if (query.FreeShipping == true)
-            candidates = candidates.Where(item => item.Listing.shippingPolicy != null &&
-                item.Listing.shippingPolicy.isActive &&
-                item.Listing.shippingPolicy.shippingType == "FREE");
-        if (query.AllowBestOffer.HasValue)
-            candidates = candidates.Where(item => item.Listing.allowBestOffer == query.AllowBestOffer);
+            candidates = candidates.Where(item => item.Listing.ShippingPolicy != null &&
+                item.Listing.ShippingPolicy.isActive &&
+                item.Listing.ShippingPolicy.ShippingOptions.Any(option => option.isActive && option.flatRate == 0));
         if (query.MinBidCount.HasValue)
             candidates = candidates.Where(item => item.Listing.listingType == "AUCTION" &&
                 item.Listing.Auction!.bidCount >= query.MinBidCount);
@@ -76,18 +74,10 @@ public sealed class ListingCatalogRepository(CloneEbayDbContext dbContext) : ILi
                 .ThenByDescending(item => item.DescriptionMatch)
                 .ThenByDescending(item => item.Listing.publishedAt ?? item.Listing.createdAt)
                 .ThenByDescending(item => item.Listing.id),
-            ListingCatalogSort.PriceAscending => candidates
-                .OrderBy(item => item.EffectivePrice)
-                .ThenBy(item => item.Listing.id),
-            ListingCatalogSort.PriceDescending => candidates
-                .OrderByDescending(item => item.EffectivePrice)
-                .ThenByDescending(item => item.Listing.id),
-            ListingCatalogSort.EndingSoon => candidates
-                .OrderBy(item => item.Listing.Auction!.endTime)
-                .ThenBy(item => item.Listing.id),
-            _ => candidates
-                .OrderByDescending(item => item.Listing.publishedAt ?? item.Listing.createdAt)
-                .ThenByDescending(item => item.Listing.id)
+            ListingCatalogSort.PriceAscending => candidates.OrderBy(item => item.EffectivePrice).ThenBy(item => item.Listing.id),
+            ListingCatalogSort.PriceDescending => candidates.OrderByDescending(item => item.EffectivePrice).ThenByDescending(item => item.Listing.id),
+            ListingCatalogSort.EndingSoon => candidates.OrderBy(item => item.Listing.Auction!.endTime).ThenBy(item => item.Listing.id),
+            _ => candidates.OrderByDescending(item => item.Listing.publishedAt ?? item.Listing.createdAt).ThenByDescending(item => item.Listing.id)
         };
 
         var items = await ordered
@@ -96,21 +86,25 @@ public sealed class ListingCatalogRepository(CloneEbayDbContext dbContext) : ILi
             .Select(item => new ListingSummaryResponse(
                 item.Listing.id,
                 item.Listing.productId,
-                item.Listing.product.title,
-                item.Listing.product.ProductImages
+                item.Listing.title,
+                item.Listing.ListingImages
                     .OrderByDescending(image => image.isPrimary)
                     .ThenBy(image => image.sortOrder)
                     .ThenBy(image => image.id)
                     .Select(image => image.imageUrl)
-                    .FirstOrDefault(),
-                item.Listing.product.brand,
-                item.Listing.product.itemCondition,
+                    .FirstOrDefault() ?? (item.Listing.product == null ? null : item.Listing.product.ProductImages
+                        .OrderByDescending(image => image.isPrimary)
+                        .ThenBy(image => image.sortOrder)
+                        .ThenBy(image => image.id)
+                        .Select(image => image.imageUrl)
+                        .FirstOrDefault()),
+                item.Listing.product == null ? null : item.Listing.product.brand,
+                item.Listing.itemCondition,
                 item.Listing.sellerId,
                 item.Listing.listingType,
                 item.EffectivePrice,
-                item.Listing.allowBestOffer,
-                item.Listing.shippingPolicy != null && item.Listing.shippingPolicy.isActive &&
-                    item.Listing.shippingPolicy.shippingType == "FREE",
+                item.Listing.ShippingPolicy != null && item.Listing.ShippingPolicy.isActive &&
+                    item.Listing.ShippingPolicy.ShippingOptions.Any(option => option.isActive && option.flatRate == 0),
                 item.Listing.listingType == "AUCTION" ? item.Listing.Auction!.currentPrice : null,
                 item.Listing.listingType == "AUCTION" ? item.Listing.Auction!.bidCount : null,
                 item.Listing.listingType == "AUCTION" ? item.Listing.Auction!.endTime : null,
@@ -129,69 +123,48 @@ public sealed class ListingCatalogRepository(CloneEbayDbContext dbContext) : ILi
             .Select(listing => new ListingDetailResponse(
                 listing.id,
                 listing.productId,
-                listing.product.title,
-                listing.product.description,
-                listing.product.brand,
-                listing.product.itemCondition,
-                new CategorySummaryResponse(
-                    listing.product.category.id,
-                    listing.product.category.name,
-                    listing.product.category.slug),
-                listing.product.ProductImages
-                    .OrderByDescending(image => image.isPrimary)
-                    .ThenBy(image => image.sortOrder)
-                    .ThenBy(image => image.id)
-                    .Select(image => new ProductImageResponse(
-                        image.id, image.imageUrl, image.isPrimary, image.sortOrder))
-                    .ToList(),
+                listing.title,
+                listing.description,
+                listing.product == null ? null : listing.product.brand,
+                listing.itemCondition,
+                new CategorySummaryResponse(listing.category.id, listing.category.name, listing.category.slug),
+                listing.ListingImages.Any()
+                    ? listing.ListingImages
+                        .OrderByDescending(image => image.isPrimary)
+                        .ThenBy(image => image.sortOrder)
+                        .ThenBy(image => image.id)
+                        .Select(image => new ProductImageResponse(image.id, image.imageUrl, image.isPrimary, image.sortOrder))
+                        .ToList()
+                    : listing.product == null
+                        ? new List<ProductImageResponse>()
+                        : listing.product.ProductImages
+                            .OrderByDescending(image => image.isPrimary)
+                            .ThenBy(image => image.sortOrder)
+                            .ThenBy(image => image.id)
+                            .Select(image => new ProductImageResponse(image.id, image.imageUrl, image.isPrimary, image.sortOrder))
+                            .ToList(),
                 listing.sellerId,
                 listing.seller.username,
-                listing.seller.SellerFeedbackSummary == null
-                    ? null
-                    : listing.seller.SellerFeedbackSummary.positiveRate,
-                listing.seller.SellerFeedbackSummary == null
-                    ? null
-                    : listing.seller.SellerFeedbackSummary.totalReviews,
-                listing.seller.Store == null
-                    ? null
-                    : new StoreSummaryResponse(
-                        listing.seller.Store.id,
-                        listing.seller.Store.storeName,
-                        listing.seller.Store.bannerImageURL),
                 listing.listingType,
-                listing.listingType == "AUCTION"
-                    ? listing.Auction!.currentPrice
-                    : listing.price!.Value,
+                listing.listingType == "AUCTION" ? listing.Auction!.currentPrice : listing.price!.Value,
                 listing.listingType == "FIXED_PRICE" ? listing.price : null,
                 listing.quantity,
-                listing.allowBestOffer,
                 new ShippingSummaryResponse(
-                    listing.shippingPolicy != null && listing.shippingPolicy.isActive
-                        ? listing.shippingPolicy.shippingType
-                        : null,
-                    listing.shippingPolicy == null || !listing.shippingPolicy.isActive
+                    null,
+                    listing.ShippingPolicy == null || !listing.ShippingPolicy.isActive
                         ? new List<ShippingOptionResponse>()
-                        : listing.shippingPolicy.ShippingOptions
+                        : listing.ShippingPolicy.ShippingOptions
                             .Where(option => option.isActive)
                             .OrderBy(option => option.id)
                             .Select(option => new ShippingOptionResponse(
-                                option.id,
-                                option.serviceName,
-                                option.serviceType,
-                                listing.shippingPolicy.shippingType == "FREE" ? 0 : option.flatRate,
-                                option.estimatedMinDays,
-                                option.estimatedMaxDays))
+                                option.id, option.serviceName, option.serviceType, option.flatRate,
+                                option.estimatedMinDays, option.estimatedMaxDays))
                             .ToList()),
                 listing.listingType == "AUCTION"
                     ? new AuctionDetailResponse(
-                        listing.Auction!.id,
-                        listing.Auction.startingPrice,
-                        listing.Auction.currentPrice,
-                        listing.Auction.bidIncrement,
-                        listing.Auction.bidCount,
-                        listing.Auction.startTime,
-                        listing.Auction.endTime,
-                        listing.Auction.status)
+                        listing.Auction!.id, listing.Auction.startingPrice, listing.Auction.currentPrice,
+                        listing.Auction.bidIncrement, listing.Auction.bidCount, listing.Auction.startTime,
+                        listing.Auction.endTime, listing.Auction.status)
                     : null,
                 listing.publishedAt))
             .SingleOrDefaultAsync(cancellationToken);

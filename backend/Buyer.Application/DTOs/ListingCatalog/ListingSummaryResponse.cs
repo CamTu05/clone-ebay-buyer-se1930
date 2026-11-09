@@ -4,7 +4,7 @@ namespace Buyer.Application.DTOs.ListingCatalog;
 
 public sealed record ListingSummaryResponse(
     int ListingId,
-    int ProductId,
+    int? ProductId,
     string Title,
     string? PrimaryImageUrl,
     string? Brand,
@@ -12,7 +12,6 @@ public sealed record ListingSummaryResponse(
     int SellerId,
     string ListingType,
     decimal EffectivePrice,
-    bool AllowBestOffer,
     bool FreeShipping,
     decimal? CurrentBid,
     int? BidCount,

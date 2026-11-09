@@ -7,7 +7,5 @@ public sealed record ProfileUserSnapshot(
     string? PhoneNumber,
     string? AvatarUrl,
     bool EmailVerified,
-    bool PhoneVerified,
     string Role,
-    string AccountStatus,
-    DateTime? LastUsernameChangedAtUtc = null);
+    string AccountStatus);

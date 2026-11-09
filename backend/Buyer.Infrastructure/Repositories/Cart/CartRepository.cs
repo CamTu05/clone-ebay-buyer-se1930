@@ -17,32 +17,33 @@ public sealed class CartRepository(CloneEbayDbContext db, IClock clock) : ICartR
             return Empty();
 
         var items = await db.CartItems.AsNoTracking()
-            .Where(item => item.cartId == cartId.Value)
+            .Where(item => item.cartId == cartId.Value && item.status == "ACTIVE")
             .OrderBy(item => item.id)
             .Select(item => new
             {
                 item.id,
                 item.listingId,
                 item.listing.productId,
-                item.listing.product.title,
-                ImageUrl = item.listing.product.ProductImages
+                item.listing.title,
+                ImageUrl = item.listing.ListingImages
                     .OrderByDescending(image => image.isPrimary)
                     .ThenBy(image => image.sortOrder)
                     .ThenBy(image => image.id)
                     .Select(image => image.imageUrl)
-                    .FirstOrDefault(),
+                    .FirstOrDefault() ?? (item.listing.product == null ? null : item.listing.product.ProductImages
+                        .OrderByDescending(image => image.isPrimary)
+                        .ThenBy(image => image.sortOrder)
+                        .ThenBy(image => image.id)
+                        .Select(image => image.imageUrl)
+                        .FirstOrDefault()),
                 SellerId = item.listing.seller.id,
                 SellerUsername = item.listing.seller.username,
-                StoreName = item.listing.seller.Store == null
-                    ? null : item.listing.seller.Store.storeName,
                 Price = item.listing.price,
                 item.quantity,
                 ListingStatus = item.listing.status,
                 ListingType = item.listing.listingType,
                 SellerStatus = item.listing.seller.accountStatus,
-                AvailableQuantity = item.listing.Inventory == null
-                    ? 0
-                    : item.listing.Inventory.quantity - item.listing.Inventory.reservedQuantity
+                AvailableQuantity = item.listing.quantity
             })
             .ToListAsync(cancellationToken);
 
@@ -54,7 +55,7 @@ public sealed class CartRepository(CloneEbayDbContext db, IClock clock) : ICartR
             var unitPrice = item.Price ?? 0m;
             return new CartItemResponse(
                 item.id, item.listingId, item.productId, item.title, item.ImageUrl,
-                new CartSellerResponse(item.SellerId, item.SellerUsername, item.StoreName),
+                new CartSellerResponse(item.SellerId, item.SellerUsername),
                 unitPrice, item.quantity, unitPrice * item.quantity, availableQuantity,
                 reason is null, reason);
         }).ToArray();
@@ -72,17 +73,14 @@ public sealed class CartRepository(CloneEbayDbContext db, IClock clock) : ICartR
     {
         var item = await db.CartItems
             .Include(value => value.cart)
-            .Include(value => value.listing).ThenInclude(listing => listing.Inventory)
             .Include(value => value.listing).ThenInclude(listing => listing.seller)
-            .SingleOrDefaultAsync(value => value.id == cartItemId && value.cart.userId == userId,
-                cancellationToken);
+            .SingleOrDefaultAsync(value => value.id == cartItemId && value.cart.userId == userId &&
+                value.status == "ACTIVE", cancellationToken);
 
         if (item is null)
             return CartResult.Failed(CartFailure.ItemNotFound);
 
-        var available = item.listing.Inventory is null
-            ? 0
-            : Math.Max(0, item.listing.Inventory.quantity - item.listing.Inventory.reservedQuantity);
+        var available = Math.Max(0, item.listing.quantity);
         if (item.listing.status != "ACTIVE" || item.listing.listingType != "FIXED_PRICE" ||
             item.listing.price is null || item.listing.seller.accountStatus != "ACTIVE")
             return CartResult.Failed(CartFailure.ListingUnavailable);
@@ -100,8 +98,8 @@ public sealed class CartRepository(CloneEbayDbContext db, IClock clock) : ICartR
     {
         var item = await db.CartItems
             .Include(value => value.cart)
-            .SingleOrDefaultAsync(value => value.id == cartItemId && value.cart.userId == userId,
-                cancellationToken);
+            .SingleOrDefaultAsync(value => value.id == cartItemId && value.cart.userId == userId &&
+                value.status == "ACTIVE", cancellationToken);
 
         if (item is null)
             return CartResult.Failed(CartFailure.ItemNotFound);

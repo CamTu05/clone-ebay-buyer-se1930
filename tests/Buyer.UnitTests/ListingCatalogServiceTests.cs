@@ -31,7 +31,7 @@ public sealed class ListingCatalogServiceTests
     {
         var listing = new ListingSummaryResponse(
             8, 5, "Camera", null, null, null, 3, "FIXED_PRICE", 1500000m,
-            false, false, null, null, null, null);
+            false, null, null, null, null);
         var repository = new StubListingCatalogRepository(new ListingCatalogPage([listing], 21));
         var clock = new FixedClock();
         var service = new ListingCatalogService(repository, clock);
@@ -60,8 +60,7 @@ public sealed class ListingCatalogServiceTests
             Condition = " NEW ",
             Brand = " Brand ",
             ListingType = " auction ",
-            FreeShipping = true,
-            AllowBestOffer = false
+            FreeShipping = true
         });
 
         Assert.NotNull(repository.Query);
@@ -71,7 +70,6 @@ public sealed class ListingCatalogServiceTests
         Assert.Equal("Brand", repository.Query.Brand);
         Assert.Equal("AUCTION", repository.Query.ListingType);
         Assert.Equal(ListingCatalogSort.Relevance, repository.Query.Sort);
-        Assert.False(repository.Query.AllowBestOffer);
     }
 
     [Fact]

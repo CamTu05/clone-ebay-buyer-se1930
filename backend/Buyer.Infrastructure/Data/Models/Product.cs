@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace Buyer.Infrastructure.Data.Models;
@@ -14,8 +14,6 @@ public partial class Product
     public int categoryId { get; set; }
 
     public string? brand { get; set; }
-
-    public string? itemCondition { get; set; }
 
     public DateTime createdAt { get; set; }
 

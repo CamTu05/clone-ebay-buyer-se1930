@@ -1,13 +1,12 @@
 export interface CartSeller {
   id: number
   username: string
-  storeName: string | null
 }
 
 export interface CartItem {
   cartItemId: number
   listingId: number
-  productId: number
+  productId: number | null
   title: string
   imageUrl: string | null
   seller: CartSeller

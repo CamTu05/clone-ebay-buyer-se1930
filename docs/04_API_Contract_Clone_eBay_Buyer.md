@@ -139,8 +139,7 @@ Success response:
       "username": "buyer-name",
       "email": "buyer@example.com",
       "role": "BUYER",
-      "emailVerified": true,
-      "phoneVerified": false
+      "emailVerified": true
     }
   },
   "errors": null
@@ -196,12 +195,20 @@ Example success (sample data):
   "data": {
     "items": [
       {
-        "productId": 7,
         "listingId": 12,
-        "name": "Wireless headphones",
-        "price": 350000,
-        "imageUrl": "https://example.com/headphones.jpg",
-        "listingType": "FIXED_PRICE"
+        "productId": null,
+        "title": "Wireless headphones",
+        "primaryImageUrl": "https://example.com/headphones.jpg",
+        "brand": null,
+        "itemCondition": "NEW",
+        "sellerId": 3,
+        "listingType": "FIXED_PRICE",
+        "effectivePrice": 350000,
+        "freeShipping": true,
+        "currentBid": null,
+        "bidCount": null,
+        "auctionEndTime": null,
+        "publishedAt": "2026-10-27T08:00:00Z"
       }
     ],
     "page": 1,
@@ -215,12 +222,13 @@ Example success (sample data):
 
 Catalog projection and availability policy for this feature:
 
-- One entry per distinct `Product` having an eligible `Listing`; ascending `productId` provides deterministic pagination. Count is calculated before paging. A page beyond the last returns `items: []` with the requested page and actual totals; an empty catalog has `totalItems: 0`, `totalPages: 0`.
+- One entry per eligible `Listing`; newest publication and descending `listingId` provide deterministic default pagination. Count is calculated before paging. A page beyond the last returns `items: []` with the requested page and actual totals; an empty catalog has `totalItems: 0`, `totalPages: 0`.
 - Eligible listings have `status = ACTIVE`, `quantity > 0`, no future `publishedAt`, and no elapsed `endedAt`. A fixed-price listing requires a non-null `price` (zero is valid). An auction requires its related `Auction` to be `ACTIVE` with `startTime <= UTC now < endTime`; its display price is `currentPrice`.
-- Choose the lowest eligible display price, breaking ties by `listingId`; return both IDs and the chosen `listingType`. The UI labels auction prices as **Current bid**, not as a fixed purchase price.
-- Pick one product image by `isPrimary DESC, sortOrder ASC, id ASC`. `imageUrl` is nullable. Missing, invalid, or failed images display a local placeholder.
+- `Listing.title`, `description`, `itemCondition`, and `categoryId` are canonical. `productId` is nullable; Product contributes optional brand and fallback images only.
+- Pick one ListingImage by `isPrimary DESC, sortOrder ASC, id ASC`; if no ListingImage exists and Product exists, use ProductImage with the same ordering. Image URLs are nullable and missing, invalid, or failed images display a local placeholder.
+- Free shipping is true exactly when an active applicable ShippingOption has `flatRate = 0`.
 - The UI formats prices as VND, following existing checkout/order currency defaults. Product/Listing has no currency column; this is the catalog's current display assumption.
-- `Listing.quantity` is a read-only catalog availability assumption, not a resolution of the documented `Inventory` stock-authority question. No stock mutations, reservation, purchase guarantees, or schema changes are introduced. Checkout must independently validate stock and price.
+- `Listing.quantity` is the stock authority used by catalog and cart. Cart changes do not reserve stock; checkout must independently revalidate stock and price.
 - SQL Server is required for catalog data; missing configuration or database failures use the standard error path rather than a fake empty catalog. Supply `ConnectionStrings__BuyerDatabase` and the existing JWT environment configuration when running the API.
 
 **Guest checkout** không có account-linked order history; cần quyết định cách guest xem lại đơn (nếu có) bằng access token an toàn, không suy ra từ email. Cart guest ở local/session, không dùng bảng `Cart` của user đã login.
@@ -252,10 +260,11 @@ Implemented authenticated Cart contract:
   `currency = VND`, availability, and `canCheckout`. A missing cart is a successful empty cart.
 - `PATCH /api/cart/items/{cartItemId}` accepts `{ "quantity": <positive integer> }` and returns
   the recalculated cart. Quantity zero is invalid and never removes an item.
-- `DELETE /api/cart/items/{cartItemId}` removes only the owned item and returns the recalculated cart.
-- Ownership is derived from the JWT `sub`; an absent or foreign item returns `CART_ITEM_NOT_FOUND`.
-- Available stock is read as `Inventory.quantity - Inventory.reservedQuantity`; cart changes do not
-  reserve or modify inventory. Only active fixed-price listings from active sellers are purchasable.
+- `DELETE /api/cart/items/{cartItemId}` physically deletes only the owned active item and returns the recalculated cart.
+- Cart display and quantity updates operate only on CartItem rows with `status = ACTIVE`; `SAVED_FOR_LATER` rows remain stored but are excluded.
+- Ownership is derived from the JWT `sub`; an absent, saved-for-later, or foreign item returns `CART_ITEM_NOT_FOUND`.
+- Available stock is read from `Listing.quantity`; cart changes do not reserve or modify stock. Only active fixed-price listings from active sellers are purchasable.
+- Cart responses contain seller ID and username only. Store data is not part of the contract.
 - Stable failures include `CART_QUANTITY_INVALID`, `CART_ITEM_NOT_FOUND`,
   `CART_LISTING_UNAVAILABLE`, and `CART_QUANTITY_EXCEEDS_STOCK`.
 

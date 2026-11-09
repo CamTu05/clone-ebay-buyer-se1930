@@ -214,7 +214,7 @@ export function ProfilePage() {
                       )
                     } />
                   <Row icon="phone" label="Phone number" value={profile.phoneNumber || 'Not provided'}
-                    description={profile.phoneVerified ? 'Phone verified' : 'This field cannot be edited from Buyer Profile.'} />
+                    description="This field cannot be edited from Buyer Profile." />
                 </div>
               </section>
 

@@ -14,7 +14,7 @@ namespace Buyer.UnitTests;
 public sealed class AuthenticationSecurityTests
 {
     private static readonly AuthUser User = new(
-        42, "buyer@example.com", "buyer", null, "BUYER", "ACTIVE", true, false);
+        42, "buyer@example.com", "buyer", null, "BUYER", "ACTIVE", true);
 
     [Fact]
     public void PasswordVerifierAcceptsCorrectPasswordAndRejectsIncorrectPassword()
