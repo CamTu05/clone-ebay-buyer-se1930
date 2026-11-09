@@ -62,7 +62,6 @@ export function ListingCatalogPage() {
       : searchParams.get('listingType') === 'FIXED_PRICE' ? 'FIXED_PRICE' : undefined,
     sellerId: readNonNegative(searchParams.get('sellerId')) || undefined,
     freeShipping: searchParams.get('freeShipping') === 'true' || undefined,
-    allowBestOffer: searchParams.get('allowBestOffer') === 'true' || undefined,
     sort: (['relevance', 'newest', 'price_asc', 'price_desc', 'ending_soon'].includes(searchParams.get('sort') ?? '')
       ? searchParams.get('sort') : undefined) as ListingSort | undefined,
   }), [page, pageSize, searchParams])
@@ -122,7 +121,6 @@ export function ListingCatalogPage() {
       <label>Buying format<select className={`${inputClass} mt-1 w-full`} name="listingType" defaultValue={query.listingType ?? ''}><option value="">All</option><option value="FIXED_PRICE">Fixed price</option><option value="AUCTION">Auction</option></select></label>
       <label>Sort<select className={`${inputClass} mt-1 w-full`} name="sort" defaultValue={query.sort ?? ''}><option value="">Default</option><option value="relevance">Relevance</option><option value="newest">Newest</option><option value="price_asc">Price: low to high</option><option value="price_desc">Price: high to low</option><option value="ending_soon">Ending soon</option></select></label>
       <label className="flex items-center gap-2"><input type="checkbox" name="freeShipping" value="true" defaultChecked={query.freeShipping} /> Free shipping</label>
-      <label className="flex items-center gap-2"><input type="checkbox" name="allowBestOffer" value="true" defaultChecked={query.allowBestOffer} /> Accepts offers</label>
       <div className="flex gap-3 md:col-span-2"><button className="rounded-lg bg-blue-700 px-5 py-2 font-semibold text-white" type="submit">Apply</button><button className={buttonClass} type="button" onClick={() => setSearchParams({ page: '1', pageSize: String(pageSize) })}>Clear</button></div>
     </form>
 
@@ -134,7 +132,7 @@ export function ListingCatalogPage() {
         : <div className="space-y-6">
           <p className="text-sm text-slate-600">Showing {(page - 1) * pageSize + 1}–{(page - 1) * pageSize + current.data.items.length} of {current.data.totalItems} listings</p>
           <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {current.data.items.map(listing => <li key={listing.listingId}><article className="h-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"><ListingImage listing={listing} /><div className="space-y-2 p-4"><h2 className="font-semibold"><Link className="hover:underline" to={`/listings/${listing.listingId}`}>{listing.title}</Link></h2><p className="text-sm text-slate-500">{listing.listingType === 'AUCTION' ? 'Current bid' : 'Price'}</p><p className="text-lg font-bold">{priceFormatter.format(listing.effectivePrice)}</p>{listing.freeShipping && <p className="text-sm text-green-700">Free shipping</p>}{listing.allowBestOffer && <p className="text-sm">Best Offer</p>}</div></article></li>)}
+            {current.data.items.map(listing => <li key={listing.listingId}><article className="h-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"><ListingImage listing={listing} /><div className="space-y-2 p-4"><h2 className="font-semibold"><Link className="hover:underline" to={`/listings/${listing.listingId}`}>{listing.title}</Link></h2><p className="text-sm text-slate-500">{listing.listingType === 'AUCTION' ? 'Current bid' : 'Price'}</p><p className="text-lg font-bold">{priceFormatter.format(listing.effectivePrice)}</p>{listing.freeShipping && <p className="text-sm text-green-700">Free shipping</p>}</div></article></li>)}
           </ul>
           <nav className="flex justify-between border-t pt-5" aria-label="Listing pagination"><button className={buttonClass} disabled={page <= 1} onClick={() => changePage(page - 1)}>Previous</button><span>Page {page} of {current.data.totalPages}</span><button className={buttonClass} disabled={page >= current.data.totalPages} onClick={() => changePage(page + 1)}>Next</button></nav>
         </div>)}

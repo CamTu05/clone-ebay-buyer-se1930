@@ -113,7 +113,7 @@ public sealed class ProfileApiTests
             LastId = authenticatedUserId;
             return Task.FromResult(ProfileServiceResult.Success(
                 new ProfileResponse(authenticatedUserId, "mybuyer42",
-                    "buyer@example.com", null, null, true, false)));
+                    "buyer@example.com", null, null, true)));
         }
 
         public Task<ProfileServiceResult> UpdateProfileAsync(int authenticatedUserId,
@@ -126,7 +126,7 @@ public sealed class ProfileApiTests
                     new ProfileFieldError("PROFILE_USERNAME_TAKEN", "username"))
                 : ProfileServiceResult.Success(new ProfileResponse(
                     authenticatedUserId, request.Username ?? "mybuyer42",
-                    "buyer@example.com", null, request.AvatarUrl, true, false)));
+                    "buyer@example.com", null, request.AvatarUrl, true)));
         }
     }
 }

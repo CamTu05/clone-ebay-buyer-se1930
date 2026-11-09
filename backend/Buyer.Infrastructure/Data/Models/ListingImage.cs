@@ -1,21 +1,19 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace Buyer.Infrastructure.Data.Models;
 
-public partial class PackageInfo
+public partial class ListingImage
 {
     public int id { get; set; }
 
     public int listingId { get; set; }
 
-    public decimal weightKg { get; set; }
+    public string imageUrl { get; set; } = null!;
 
-    public decimal? lengthCm { get; set; }
+    public int sortOrder { get; set; }
 
-    public decimal? widthCm { get; set; }
-
-    public decimal? heightCm { get; set; }
+    public bool isPrimary { get; set; }
 
     public virtual Listing listing { get; set; } = null!;
 }

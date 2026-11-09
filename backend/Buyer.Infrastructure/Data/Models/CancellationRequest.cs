@@ -1,21 +1,19 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace Buyer.Infrastructure.Data.Models;
 
-public partial class Dispute
+public partial class CancellationRequest
 {
     public long id { get; set; }
 
     public long orderId { get; set; }
 
-    public int raisedBy { get; set; }
+    public int requestedBy { get; set; }
 
-    public string description { get; set; } = null!;
+    public string reason { get; set; } = null!;
 
     public string status { get; set; } = null!;
-
-    public string? resolution { get; set; }
 
     public DateTime createdAt { get; set; }
 
@@ -23,5 +21,5 @@ public partial class Dispute
 
     public virtual OrderTable order { get; set; } = null!;
 
-    public virtual User raisedByNavigation { get; set; } = null!;
+    public virtual User requestedByNavigation { get; set; } = null!;
 }

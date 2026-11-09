@@ -31,7 +31,8 @@ public sealed class AddressEndpointTests
             _connection.CreateFunction("sysutcdatetime", () => DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff", System.Globalization.CultureInfo.InvariantCulture));
             _options = new DbContextOptionsBuilder<CloneEbayDbContext>().UseSqlite(_connection).Options;
             using var db = new CloneEbayDbContext(_options);
-            db.Database.EnsureCreated();
+            var schema = db.Database.GenerateCreateScript().Replace("N'", "'", StringComparison.Ordinal);
+            db.Database.ExecuteSqlRaw(schema);
             db.Users.AddRange(new User { id = 1, username = "buyer", email = "buyer@example.test", role = "BUYER", accountStatus = "ACTIVE" },
                 new User { id = 2, username = "other", email = "other@example.test", role = "BUYER", accountStatus = "ACTIVE" });
             db.SaveChanges();

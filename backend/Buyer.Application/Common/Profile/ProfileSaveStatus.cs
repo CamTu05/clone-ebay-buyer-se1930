@@ -6,6 +6,5 @@ public enum ProfileSaveStatus
     UserNotFound,
     AccountUnavailable,
     UsernameTaken,
-    UsernameChangeRestricted,
     ConcurrentConflict
 }

@@ -12,7 +12,7 @@ export interface ShippingOption {
 }
 export interface ListingDetail {
   listingId: number
-  productId: number
+  productId: number | null
   title: string
   description: string | null
   brand: string | null
@@ -21,14 +21,10 @@ export interface ListingDetail {
   images: ListingImage[]
   sellerId: number
   sellerUsername: string
-  sellerPositiveRate: number | null
-  sellerFeedbackCount: number | null
-  store: { storeId: number; storeName: string; bannerImageUrl: string | null } | null
   listingType: 'FIXED_PRICE' | 'AUCTION'
   effectivePrice: number
   buyItNowPrice: number | null
   quantity: number
-  allowBestOffer: boolean
   shipping: { shippingType: string | null; availableOptions: ShippingOption[] }
   auction: {
     auctionId: number

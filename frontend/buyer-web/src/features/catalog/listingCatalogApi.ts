@@ -6,7 +6,7 @@ function isListing(value: unknown): value is ListingSummary {
   if (!value || typeof value !== 'object') return false
   const listing = value as ListingSummary
   return Number.isInteger(listing.listingId) && listing.listingId > 0
-    && Number.isInteger(listing.productId) && listing.productId > 0
+    && (listing.productId === null || (Number.isInteger(listing.productId) && listing.productId > 0))
     && typeof listing.title === 'string'
     && typeof listing.effectivePrice === 'number' && Number.isFinite(listing.effectivePrice) && listing.effectivePrice >= 0
     && (listing.primaryImageUrl === null || typeof listing.primaryImageUrl === 'string')

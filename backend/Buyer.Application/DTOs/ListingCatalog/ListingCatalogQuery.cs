@@ -11,7 +11,6 @@ public sealed record ListingCatalogQuery(
     string? ListingType,
     int? SellerId,
     bool? FreeShipping,
-    bool? AllowBestOffer,
     int? MinBidCount,
     int? MaxBidCount,
     ListingCatalogSort Sort,

@@ -6,5 +6,4 @@ public sealed record ProfileResponse(
     string Email,
     string? PhoneNumber,
     string? AvatarUrl,
-    bool EmailVerified,
-    bool PhoneVerified);
+    bool EmailVerified);

@@ -83,7 +83,7 @@ The Compose configuration is intended for local development and requires Docker 
 
 Open `/catalog` to browse available listings with titles, VND prices, images, and server-side pagination. Missing/broken images use a placeholder; empty pages and API failures have dedicated states with recovery actions.
 
-The public endpoint is `GET /api/listings?page=1&pageSize=20` (`pageSize` up to 100). Each result represents one active Listing; Product supplies card metadata. Fixed-price listings use `Listing.price`, while auctions use `Auction.currentPrice`.
+The public endpoint is `GET /api/listings?page=1&pageSize=20` (`pageSize` up to 100). Each result represents one active Listing; Listing supplies canonical catalog metadata and Product is optional. Fixed-price listings use `Listing.price`, while auctions use `Auction.currentPrice`.
 
 Catalog data requires the existing SQL Server database through `ConnectionStrings__BuyerDatabase`, plus the existing JWT startup settings including `Jwt__SigningKey`. No database is created and no seed data is inserted by this feature.
 

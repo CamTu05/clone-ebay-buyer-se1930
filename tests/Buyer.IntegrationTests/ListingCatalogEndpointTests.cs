@@ -18,7 +18,7 @@ public sealed class ListingCatalogEndpointTests
     {
         var listing = new ListingSummaryResponse(
             12, 7, "Wireless headphones", "https://example.com/headphones.jpg", "Brand", "NEW",
-            3, "FIXED_PRICE", 350000m, true, false, null, null, null, null);
+            3, "FIXED_PRICE", 350000m, false, null, null, null, null);
         var service = new StubListingCatalogService
         {
             Result = new ListingPageResponse([listing], 1, 20, 1, 1)
@@ -97,7 +97,7 @@ public sealed class ListingCatalogEndpointTests
         var response = await client.GetAsync(
             "/api/listings?search=iphone&categoryId=3&minPrice=100&maxPrice=1000" +
             "&condition=NEW&brand=Apple&listingType=AUCTION&sellerId=5&freeShipping=true" +
-            "&allowBestOffer=true&minBidCount=1&maxBidCount=10&sort=price_asc&page=2&pageSize=20");
+            "&minBidCount=1&maxBidCount=10&sort=price_asc&page=2&pageSize=20");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var request = Assert.IsType<ListingListRequest>(service.LastRequest);
@@ -110,7 +110,6 @@ public sealed class ListingCatalogEndpointTests
         Assert.Equal("AUCTION", request.ListingType);
         Assert.Equal(5, request.SellerId);
         Assert.True(request.FreeShipping);
-        Assert.True(request.AllowBestOffer);
         Assert.Equal(1, request.MinBidCount);
         Assert.Equal(10, request.MaxBidCount);
         Assert.Equal("price_asc", request.Sort);

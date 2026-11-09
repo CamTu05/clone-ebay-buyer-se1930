@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace Buyer.Infrastructure.Data.Models;
@@ -16,6 +16,8 @@ public partial class Category
     public bool isActive { get; set; }
 
     public virtual ICollection<Category> InverseparentCategory { get; set; } = new List<Category>();
+
+    public virtual ICollection<Listing> Listings { get; set; } = new List<Listing>();
 
     public virtual ICollection<Product> Products { get; set; } = new List<Product>();
 

@@ -48,10 +48,7 @@ export function ListingDetailPage() {
             <p className="text-sm text-slate-600">{listing.listingType === 'AUCTION' ? 'Auction · Current bid' : 'Buy it now'}</p>
             <p className="text-3xl font-bold">{priceFormat.format(listing.effectivePrice)}</p>
             <p>Seller: <span className="font-semibold">{listing.sellerUsername}</span></p>
-            {listing.store && <p>Store: {listing.store.storeName}</p>}
-            {listing.sellerPositiveRate !== null && <p>Positive feedback: {listing.sellerPositiveRate}%</p>}
             <p>Quantity available: {listing.quantity}</p>
-            {listing.allowBestOffer && <p>Best Offer accepted</p>}
             {listing.auction && <div className="rounded-lg border border-slate-200 p-4">
               <p>{listing.auction.bidCount} bids</p>
               <p>Bid increment: {priceFormat.format(listing.auction.bidIncrement)}</p>

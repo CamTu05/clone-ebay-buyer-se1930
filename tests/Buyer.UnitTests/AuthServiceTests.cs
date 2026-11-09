@@ -5,7 +5,7 @@ namespace Buyer.UnitTests;
 public sealed class AuthServiceTests
 {
     private static readonly AuthUser ActiveBuyer = new(
-        1, "buyer@example.com", "buyer", "hash", "BUYER", "ACTIVE", true, false);
+        1, "buyer@example.com", "buyer", "hash", "BUYER", "ACTIVE", true);
 
     [Fact]
     public async Task LoginReturnsTokenForValidCredentials()

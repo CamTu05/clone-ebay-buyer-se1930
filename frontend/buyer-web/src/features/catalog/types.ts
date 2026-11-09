@@ -1,6 +1,6 @@
 export interface ListingSummary {
   listingId: number
-  productId: number
+  productId: number | null
   title: string
   primaryImageUrl: string | null
   brand: string | null
@@ -8,7 +8,6 @@ export interface ListingSummary {
   sellerId: number
   listingType: 'FIXED_PRICE' | 'AUCTION'
   effectivePrice: number
-  allowBestOffer: boolean
   freeShipping: boolean
   currentBid: number | null
   bidCount: number | null
@@ -28,7 +27,6 @@ export interface ListingCatalogQuery {
   listingType?: 'FIXED_PRICE' | 'AUCTION'
   sellerId?: number
   freeShipping?: boolean
-  allowBestOffer?: boolean
   minBidCount?: number
   maxBidCount?: number
   sort?: ListingSort

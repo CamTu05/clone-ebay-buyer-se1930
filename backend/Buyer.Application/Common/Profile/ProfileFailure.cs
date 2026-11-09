@@ -9,6 +9,5 @@ public enum ProfileFailure
     AccountUnavailable,
     ValidationFailed,
     UsernameTaken,
-    UsernameChangeRestricted,
     ConcurrentConflict
 }

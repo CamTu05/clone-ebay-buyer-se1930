@@ -72,9 +72,6 @@ public sealed class ProfileService(IProfileRepository repository) : IProfileServ
             ProfileSaveStatus.UsernameTaken => ProfileServiceResult.Failed(
                 ProfileFailure.UsernameTaken,
                 new ProfileFieldError("PROFILE_USERNAME_TAKEN", "username")),
-            ProfileSaveStatus.UsernameChangeRestricted => ProfileServiceResult.Failed(
-                ProfileFailure.UsernameChangeRestricted,
-                new ProfileFieldError("PROFILE_USERNAME_CHANGE_RESTRICTED", "username")),
             _ => ProfileServiceResult.Failed(ProfileFailure.ConcurrentConflict,
                 new ProfileFieldError("PROFILE_CONCURRENT_CONFLICT", null))
         };
@@ -85,7 +82,7 @@ public sealed class ProfileService(IProfileRepository repository) : IProfileServ
 
     private static ProfileResponse ToResponse(ProfileUserSnapshot user) => new(
         user.Id, user.Username, user.Email, user.PhoneNumber,
-        user.AvatarUrl, user.EmailVerified, user.PhoneVerified);
+        user.AvatarUrl, user.EmailVerified);
 
     private static ProfileServiceResult NotFound() => ProfileServiceResult.Failed(
         ProfileFailure.UserNotFound, new ProfileFieldError("PROFILE_NOT_FOUND", null));

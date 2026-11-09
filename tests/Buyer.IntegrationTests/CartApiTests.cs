@@ -112,7 +112,7 @@ public sealed class CartApiTests
     private sealed class StubCartService : ICartService
     {
         private static readonly CartResponse Cart = new(1,
-            [new(5, 11, 7, "Camera", null, new(2, "seller", null),
+            [new(5, 11, 7, "Camera", null, new(2, "seller"),
                 100m, 2, 200m, 5, true, null)], 200m, "VND", true);
         public int LastUserId { get; private set; }
         public int LastCartItemId { get; private set; }

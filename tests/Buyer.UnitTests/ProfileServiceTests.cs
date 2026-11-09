@@ -7,7 +7,7 @@ public sealed class ProfileServiceTests
 {
     private static readonly ProfileUserSnapshot Buyer = new(
         12, "buyer_old", "buyer@example.com", null,
-        "https://example.com/old.png", true, false, "BUYER", "ACTIVE");
+        "https://example.com/old.png", true, "BUYER", "ACTIVE");
 
     [Fact]
     public async Task GetUsesAuthenticatedUserId()
@@ -112,7 +112,6 @@ public sealed class ProfileServiceTests
 
     [Theory]
     [InlineData(ProfileSaveStatus.UsernameTaken, ProfileFailure.UsernameTaken)]
-    [InlineData(ProfileSaveStatus.UsernameChangeRestricted, ProfileFailure.UsernameChangeRestricted)]
     [InlineData(ProfileSaveStatus.ConcurrentConflict, ProfileFailure.ConcurrentConflict)]
     [InlineData(ProfileSaveStatus.AccountUnavailable, ProfileFailure.AccountUnavailable)]
     [InlineData(ProfileSaveStatus.UserNotFound, ProfileFailure.UserNotFound)]

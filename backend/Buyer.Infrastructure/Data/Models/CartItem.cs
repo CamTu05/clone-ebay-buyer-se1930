@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace Buyer.Infrastructure.Data.Models;
@@ -12,6 +12,8 @@ public partial class CartItem
     public int listingId { get; set; }
 
     public int quantity { get; set; }
+
+    public string status { get; set; } = null!;
 
     public DateTime addedAt { get; set; }
 

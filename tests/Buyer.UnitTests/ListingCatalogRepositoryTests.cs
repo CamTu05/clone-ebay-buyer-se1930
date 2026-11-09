@@ -70,20 +70,23 @@ public sealed class ListingCatalogRepositoryTests
         await using var database = CreateDatabase();
         var product = NewProduct(1);
         product.brand = "Brand";
-        product.itemCondition = "NEW";
         product.ProductImages.Add(NewImage(1, 1, false, 0));
         product.ProductImages.Add(NewImage(10, 1, true, 10));
         product.ProductImages.Add(NewImage(9, 1, true, 2));
         var listing = NewListing(1, 1);
-        listing.allowBestOffer = true;
+        listing.itemCondition = "NEW";
         listing.publishedAt = Now;
-        listing.shippingPolicy = new ShippingPolicy
+        listing.ShippingPolicy = new ShippingPolicy
         {
             id = 1,
             sellerId = 1,
             name = "Free",
-            shippingType = "FREE",
-            isActive = true
+            isActive = true,
+            ShippingOptions = [new ShippingOption
+            {
+                id = 1, shippingPolicyId = 1, serviceName = "Standard", serviceType = "STANDARD",
+                flatRate = 0, isActive = true
+            }]
         };
         product.Listings.Add(listing);
         database.Products.Add(product);
@@ -96,7 +99,6 @@ public sealed class ListingCatalogRepositoryTests
         Assert.Equal("https://example.test/9.png", item.PrimaryImageUrl);
         Assert.Equal("Brand", item.Brand);
         Assert.Equal("NEW", item.ItemCondition);
-        Assert.True(item.AllowBestOffer);
         Assert.True(item.FreeShipping);
         Assert.Equal(Now, item.PublishedAt);
     }
@@ -143,25 +145,22 @@ public sealed class ListingCatalogRepositoryTests
         var second = NewListing(12, 1, 700);
         second.sellerId = 2;
         second.seller = sellerTwo;
-        second.shippingPolicy = new ShippingPolicy
+        second.ShippingPolicy = new ShippingPolicy
         {
             id = 1,
             sellerId = 2,
             seller = sellerTwo,
             name = "Free",
-            shippingType = "FREE",
             isActive = true,
             ShippingOptions = [new ShippingOption
             {
                 id = 1, shippingPolicyId = 1, serviceName = "Standard", serviceType = "STANDARD",
-                flatRate = null, estimatedMinDays = 2, estimatedMaxDays = 4, isActive = true
+                flatRate = 0, estimatedMinDays = 2, estimatedMaxDays = 4, isActive = true
             }]
         };
         product.Listings.Add(first);
         product.Listings.Add(second);
         database.AddRange(category, sellerOne, sellerTwo, product);
-        database.Entry(sellerOne).Property("normalizedUsername").CurrentValue = "SELLER-ONE";
-        database.Entry(sellerTwo).Property("normalizedUsername").CurrentValue = "SELLER-TWO";
         await database.SaveChangesAsync();
         database.ChangeTracker.Clear();
 
@@ -172,7 +171,7 @@ public sealed class ListingCatalogRepositoryTests
         Assert.Equal("seller-two", detail.SellerUsername);
         Assert.Equal(700, detail.EffectivePrice);
         Assert.Equal(new[] { 2, 3, 1 }, detail.Images.Select(image => image.ImageId));
-        Assert.Equal("FREE", detail.Shipping.ShippingType);
+        Assert.Null(detail.Shipping.ShippingType);
         Assert.Equal(0, Assert.Single(detail.Shipping.AvailableOptions).FlatRate);
         Assert.Null(detail.Auction);
     }
@@ -190,7 +189,6 @@ public sealed class ListingCatalogRepositoryTests
         MakeAuction(auctionListing, 450);
         product.Listings.Add(auctionListing);
         database.AddRange(category, seller, product);
-        database.Entry(seller).Property("normalizedUsername").CurrentValue = "AUCTION-SELLER";
         await database.SaveChangesAsync();
         database.ChangeTracker.Clear();
 
@@ -209,16 +207,17 @@ public sealed class ListingCatalogRepositoryTests
     {
         await using var database = CreateDatabase();
         var product = NewProduct(1);
-        product.title = "iPhone 15";
-        product.description = "Apple smartphone";
         product.brand = "Apple";
-        product.itemCondition = "NEW";
         var fixedListing = NewListing(11, 1, 800);
+        fixedListing.title = "iPhone 15";
+        fixedListing.description = "Apple smartphone";
+        fixedListing.itemCondition = "NEW";
         fixedListing.sellerId = 2;
-        fixedListing.allowBestOffer = true;
         var auctionListing = NewListing(12, 1);
         auctionListing.sellerId = 2;
-        auctionListing.allowBestOffer = true;
+        auctionListing.title = "iPhone 15";
+        auctionListing.description = "Apple smartphone";
+        auctionListing.itemCondition = "NEW";
         MakeAuction(auctionListing, 500);
         auctionListing.Auction!.bidCount = 5;
         product.Listings.Add(fixedListing);
@@ -228,7 +227,7 @@ public sealed class ListingCatalogRepositoryTests
         database.ChangeTracker.Clear();
         var query = new ListingCatalogQuery(
             "iphone", "%iphone%", 1, 400, 600, "NEW", "Apple", "AUCTION", 2,
-            null, true, 3, 10, ListingCatalogSort.PriceAscending, 1, 20);
+            null, 3, 10, ListingCatalogSort.PriceAscending, 1, 20);
 
         var result = await Repository(database).GetAvailableListingsAsync(query, Now, default);
 
@@ -252,7 +251,7 @@ public sealed class ListingCatalogRepositoryTests
         await database.SaveChangesAsync();
         database.ChangeTracker.Clear();
         var query = new ListingCatalogQuery(
-            null, null, null, null, null, null, null, null, null, null, null,
+            null, null, null, null, null, null, null, null, null, null,
             null, null, ListingCatalogSort.PriceAscending, 1, 20);
 
         var result = await Repository(database).GetAvailableListingsAsync(query, Now, default);
@@ -317,7 +316,10 @@ public sealed class ListingCatalogRepositoryTests
         status = "ACTIVE",
         price = price,
         quantity = 1,
-        createdAt = Now.AddDays(-1)
+        createdAt = Now.AddDays(-1),
+        categoryId = 1,
+        title = $"Product {productId}",
+        rowVersion = []
     };
 
     private static void MakeAuction(Listing listing, decimal currentPrice = 80)

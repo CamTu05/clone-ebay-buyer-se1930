@@ -28,7 +28,6 @@ public sealed class ListingListRequest : IValidatableObject
     public int? SellerId { get; init; }
 
     public bool? FreeShipping { get; init; }
-    public bool? AllowBestOffer { get; init; }
 
     [Range(0, int.MaxValue)]
     public int? MinBidCount { get; init; }

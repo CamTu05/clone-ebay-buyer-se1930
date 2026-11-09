@@ -12,7 +12,7 @@ public sealed class ProductListRequest
 }
 
 public sealed record ProductSummaryResponse(
-    int ProductId,
+    int? ProductId,
     int ListingId,
     string Name,
     decimal Price,
