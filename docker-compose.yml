@@ -1,26 +1,18 @@
 name: ebay-clone-buyer
+
 services:
   api:
     build:
       context: .
       dockerfile: infrastructure/docker/backend.Dockerfile
     environment:
-      ASPNETCORE_ENVIRONMENT: Production
-      Jwt__SigningKey: ${JWT_SIGNING_KEY:?Set JWT_SIGNING_KEY}
-      BuyerLifecycle__Enabled: "true"
-      EmailOutbox__Enabled: "true"
-      Payments__EnableMock: "true"
-      Frontend__PublicUrl: ${FRONTEND_PUBLIC_URL:-http://localhost:8080}
-      ConnectionStrings__BuyerDatabase: ${BUYER_DB_CONNECTION:?Set BUYER_DB_CONNECTION}
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__BuyerDatabase: ${BUYER_DB_CONNECTION}
       Cors__AllowedOrigins__0: http://localhost:8080
     depends_on:
-      db-init:
-        condition: service_completed_successfully
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health/ready"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
+      sqlserver:
+        condition: service_healthy
+
   web:
     build:
       context: .
@@ -30,13 +22,13 @@ services:
     ports:
       - "8080:80"
     depends_on:
-      api:
-        condition: service_healthy
+      - api
+
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
     environment:
       ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: ${SA_PASSWORD:?Set SA_PASSWORD}
+      MSSQL_SA_PASSWORD: ${SA_PASSWORD}
     ports:
       - "1433:1433"
     volumes:
@@ -47,15 +39,6 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
-  db-init:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    depends_on:
-      sqlserver:
-        condition: service_healthy
-    environment:
-      SQLCMDPASSWORD: ${SA_PASSWORD}
-    volumes:
-      - ./database:/scripts:ro
-    entrypoint: ["/bin/bash", "/scripts/bootstrap.sh"]
+
 volumes:
   buyer-sql-data:
