@@ -5,6 +5,7 @@ namespace Buyer.Infrastructure.BuyerSchema.Models;
 
 public partial class OrderTable
 {
+    public decimal taxAmount { get; set; }
     public long id { get; set; }
 
     public long checkoutGroupId { get; set; }

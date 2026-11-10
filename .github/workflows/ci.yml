@@ -33,3 +33,36 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run build
+
+  buyer-sql-e2e:
+    runs-on: ubuntu-latest
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: Y
+          MSSQL_SA_PASSWORD: CiOnlySqlPassword123!
+        ports: ['1433:1433']
+        options: >-
+          --health-cmd="/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P CiOnlySqlPassword123! -C -Q 'SELECT 1'"
+          --health-interval=10s --health-timeout=5s --health-retries=15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with: {dotnet-version: 8.0.x}
+      - uses: actions/setup-node@v4
+        with: {node-version: 22}
+      - run: dotnet build EbayClone.sln -c Release
+      - run: npm ci
+        working-directory: frontend/buyer-web
+      - run: npx playwright install --with-deps chromium
+        working-directory: frontend/buyer-web
+      - run: bash scripts/ci-buyer-integration.sh
+        env:
+          SQL_CONTAINER_ID: ${{ job.services.sqlserver.id }}
+          SQLCMDPASSWORD: CiOnlySqlPassword123!
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: buyer-e2e-failure
+          path: frontend/buyer-web/test-results

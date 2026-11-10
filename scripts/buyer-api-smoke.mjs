@@ -4,7 +4,7 @@ const base = process.env.BUYER_TEST_URL;
 if (!base || !process.env.BUYER_TEST_PASSWORD) throw Error('Set BUYER_TEST_URL and BUYER_TEST_PASSWORD for an isolated test server.');
 const database = process.env.BUYER_TEST_DATABASE;
 if (!/^CloneEbayBuyer_Test_[A-Za-z0-9_]+$/.test(database ?? '')) throw Error('BUYER_TEST_DATABASE must name a dedicated CloneEbayBuyer_Test_ database.');
-function sql(query) { return execFileSync('sqlcmd',['-S',process.env.BUYER_TEST_SQL_SERVER ?? '.\\SQLEXPRESS','-E','-C','-I','-b','-d',database,'-h','-1','-W','-Q','SET NOCOUNT ON; '+query],{encoding:'utf8'}).trim(); }
+function sql(query) { return execFileSync('sqlcmd',['-S',process.env.BUYER_TEST_SQL_SERVER ?? '.\\SQLEXPRESS',...(process.env.BUYER_TEST_SQL_USER?['-U',process.env.BUYER_TEST_SQL_USER]:['-E']),'-C','-I','-b','-d',database,'-h','-1','-W','-Q','SET NOCOUNT ON; '+query],{encoding:'utf8'}).trim(); }
 let assertions = 0;
 function check(value, message) { if (!value) throw Error(message); assertions++; }
 async function api(path, token, method='GET', body, expected=200) {

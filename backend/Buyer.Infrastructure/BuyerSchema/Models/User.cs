@@ -5,6 +5,8 @@ namespace Buyer.Infrastructure.BuyerSchema.Models;
 
 public partial class User
 {
+    public int authVersion { get; set; }
+    public DateTime? usernameChangedAt { get; set; }
     public int id { get; set; }
 
     public string username { get; set; } = null!;

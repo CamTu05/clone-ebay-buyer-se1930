@@ -73,6 +73,7 @@ public static class DependencyInjection
             services.AddScoped<IAddressRepository, BuyerSchema.AddressRepository>();
             services.AddScoped<IProfileRepository, BuyerSchema.ProfileRepository>();
             services.AddScoped<BuyerSchema.BuyerWorkflowService>();
+            services.AddScoped<BuyerSchema.AccountLifecycleService>();
         }
 
         return services;

@@ -9,7 +9,7 @@ const categories = ['Electronics', 'Motors', 'Fashion', 'Collectibles and art', 
 const keywords = ['laptop', 'car', 'shoes', 'collectible', 'sport', 'beauty', 'tools', 'home']
 const footerGroups = [
   { title: 'Buy', links: [['Shop all items', '/catalog'], ['Registration', '/register'], ['Bidding & buying help', '/help'], ['Watchlist', '/watchlist'], ['Shipping addresses', '/addresses']] },
-  { title: 'My eBay', links: [['Purchase history', '/orders'], ['Personal information', '/profile'], ['Shopping cart', '/cart'], ['Saved items', '/watchlist']] },
+  { title: 'My eBay', links: [['Purchase history', '/orders'], ['Bids & won items', '/bids'], ['Personal information', '/profile'], ['Shopping cart', '/cart'], ['Saved items', '/watchlist']] },
   { title: 'Explore', links: [['Electronics', '/catalog?q=laptop'], ['Fashion', '/catalog?q=shoes'], ['Home and garden', '/catalog?q=home'], ['Collectibles', '/catalog?q=collectible']] },
   { title: 'Help & Contact', links: [['Buying help', '/help'], ['Your account', '/profile'], ['Delivery addresses', '/addresses'], ['Returns information', '/help']] },
 ]

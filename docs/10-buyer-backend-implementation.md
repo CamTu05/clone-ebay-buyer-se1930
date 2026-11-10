@@ -81,3 +81,7 @@ Không coi build/API tests là kiểm chứng giao diện trình duyệt hoặc 
 
 Nút Buy It Now ở listing FIXED_PRICE mở /checkout?listingId=...&quantity=1; nếu chưa đăng nhập sẽ quay lại checkout sau đăng nhập. POST /api/checkout/preview và /api/checkout nhận thêm listingId (tùy chọn), quantity (1–1000). Khi có listingId, backend chỉ mua listing đó, không thêm/xóa giỏ. Khi thiếu listingId, giữ nguyên luồng checkout giỏ. Preview không tạo đơn/giữ tồn kho; Place order mới tạo đơn. COD xác nhận chờ thu tiền, PayPal PENDING đến khi thanh toán mô phỏng. Script scripts/buyer-buy-now-smoke.mjs đã qua 22 assertions trên DB test, gồm bảo toàn giỏ, tồn kho, preview, COD/PayPal và dữ liệu không hợp lệ.
 
+
+## Cập nhật triển khai tiếp theo
+
+Xem [Buyer completion](11-buyer-completion.md) để biết các chức năng đã bổ sung, kết quả kiểm thử mới và cấu hình dịch vụ bên ngoài. Các giới hạn ghi phía trên phản ánh phiên bản trước lần cập nhật này.

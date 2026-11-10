@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 const base=process.env.BUYER_TEST_URL, database=process.env.BUYER_TEST_DATABASE,password=process.env.BUYER_TEST_PASSWORD;
 if(!base || !password || !/^CloneEbayBuyer_Test_[A-Za-z0-9_]+$/.test(database??''))throw Error('Dedicated test URL, password and database required.');
-function sql(q){return execFileSync('sqlcmd',['-S',process.env.BUYER_TEST_SQL_SERVER??'.\\SQLEXPRESS','-E','-C','-I','-b','-d',database,'-h','-1','-W','-Q','SET NOCOUNT ON; '+q],{encoding:'utf8'}).trim()}
+function sql(q){return execFileSync('sqlcmd',['-S',process.env.BUYER_TEST_SQL_SERVER??'.\\SQLEXPRESS',...(process.env.BUYER_TEST_SQL_USER?['-U',process.env.BUYER_TEST_SQL_USER]:['-E']),'-C','-I','-b','-d',database,'-h','-1','-W','-Q','SET NOCOUNT ON; '+q],{encoding:'utf8'}).trim()}
 function check(v,m){if(!v)throw Error(m)}
 async function api(p,t,method='GET',body){const r=await fetch(base+p,{method,headers:{'Content-Type':'application/json',...(t?{Authorization:'Bearer '+t}:{})},body:body?JSON.stringify(body):undefined});const j=await r.json();return {status:r.status,data:j.data}}
 const tokens=[];for(const n of [11,12])tokens.push((await api('/api/auth/login',null,'POST',{email:`seed.buyer${n}@example.test`,password})).data.accessToken);

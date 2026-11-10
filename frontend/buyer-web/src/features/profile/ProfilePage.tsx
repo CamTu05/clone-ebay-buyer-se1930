@@ -91,7 +91,7 @@ export function ProfilePage() {
     <AccountNavigation>
       <div className="account-page-toolbar">
         <div>
-          <h2 className="account-section-title">Personal information</h2>
+          <h2 className="account-section-title">Personal information</h2><Link to="/change-password">Change password</Link>
           <p className="account-description">Manage the details associated with your buyer account.</p>
         </div>
         <button className="account-link-button" type="button" onClick={refreshProfile} disabled={loadState === 'loading'}>Refresh</button>
@@ -120,7 +120,7 @@ export function ProfilePage() {
           </div>
           <div className="account-profile-details">
             <Row icon="user" label="Username" value={profile.username}
-              description="Username changes are unavailable for the current database schema."
+              description="You can change your username once every 30 days." action={() => setModal('username')}
                />
             <Row icon="mail" label="Email address" value={profile.email}
               description={profile.emailVerified ? 'Email verified' : 'Email not verified'} />

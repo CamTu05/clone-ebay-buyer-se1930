@@ -5,6 +5,7 @@ export interface AuthContextValue {
   user: AuthUser | null
   isAuthenticated: boolean
   login: (credentials: LoginRequest) => Promise<void>
+  completeExternal: (code: string) => Promise<void>
   logout: () => void
 }
 

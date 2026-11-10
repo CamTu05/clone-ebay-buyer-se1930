@@ -21,7 +21,7 @@ public sealed class UserRepository(BuyerSchemaContext dbContext) : IUserReposito
                 user.role,
                 user.accountStatus,
                 user.emailVerified,
-                false))
+                false, user.authVersion))
             .SingleOrDefaultAsync(cancellationToken);
     }
 

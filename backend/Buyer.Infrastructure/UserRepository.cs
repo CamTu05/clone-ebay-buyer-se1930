@@ -21,7 +21,7 @@ public sealed class UserRepository(CloneEbayDbContext dbContext) : IUserReposito
                 user.role,
                 user.accountStatus,
                 user.emailVerified,
-                user.phoneVerified))
+                user.phoneVerified, 0))
             .SingleOrDefaultAsync(cancellationToken);
     }
 

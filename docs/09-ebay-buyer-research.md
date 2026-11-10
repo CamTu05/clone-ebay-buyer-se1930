@@ -146,3 +146,5 @@ Kiểm tra: npm run build và npm run lint thành công. Backend/database không
 ## Cập nhật backend sau khảo sát
 
 Các giới hạn backend ghi ở phần khảo sát phía trên là hiện trạng trước triển khai. Xem [Backend Buyer đã triển khai](10-buyer-backend-implementation.md) để biết API mới, mapping CloneEbayBuyer, các luồng FE đã nối DB, kết quả kiểm thử và giới hạn còn lại.
+
+Triển khai bổ sung sau backlog review: [Buyer completion](11-buyer-completion.md).

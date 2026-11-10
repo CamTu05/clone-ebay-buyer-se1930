@@ -1,112 +1,40 @@
-# eBay Clone – Buyer Module
+# eBay Clone — Buyer
 
-Independent Buyer Module for the PRN232 Group 1 project. This repository is initialized as a modular monolith with simplified Clean Architecture and feature-based React organization.
+ASP.NET Core 8 / SQL Server backend and React/TypeScript frontend. Current database: **CloneEbayBuyer**.
 
-## Tech Stack
+Implementation and test evidence: [Buyer completion](docs/11-buyer-completion.md). Earlier architecture/research documents describe historical states and may predate the implemented workflows.
 
-- .NET 8, ASP.NET Core Web API, EF Core 8, SQL Server
-- React, TypeScript, Vite, React Router, Axios, Tailwind CSS
-- xUnit and ASP.NET Core integration testing
-- Docker, Docker Compose, Nginx, and GitHub Actions preparation
+## Local setup
 
-## Structure
-
-```text
-backend/       API, Application, Domain, Infrastructure
-tests/         Unit and integration tests
-frontend/      Vite React buyer application
-docs/          Official requirements, architecture, database, API contract, and audit
-infrastructure/ Docker, Nginx, and Kubernetes preparation
-performance-tests/ JMeter preparation
-.github/       CI workflow
-```
-
-## Prerequisites
-
-- .NET SDK 8.0
-- Node.js 20 or newer and npm
-- SQL Server only when persistence is enabled
-- Docker Desktop only for container workflows
-
-The target database name is `CloneEbayDB_V2`. The SQL file under `database/` is a destructive clean-bootstrap reference containing `DROP DATABASE`; never execute it against an existing database.
-
-## Install
-
-```bash
-dotnet restore EbayClone.sln
-npm ci --prefix frontend/buyer-web
-```
-
-Copy `.env.example` to `.env` for Docker Compose and `frontend/buyer-web/.env.example` to `frontend/buyer-web/.env.local` for local frontend development. Do not commit secrets.
-
-## Run
-
-On Windows PowerShell, use `npm.cmd` instead of `npm` if script execution is disabled (`npm.ps1 cannot be loaded`). No execution-policy change is needed.
-
-Before the first backend run, configure `Jwt:SigningKey` (at least 32 characters) in local User Secrets. This PowerShell snippet generates a random key without printing it or committing it to Git. Run it once; replacing the key invalidates existing login tokens.
+1. Configure ConnectionStrings:BuyerDatabase for SQL Server. Development defaults to .\SQLEXPRESS and CloneEbayBuyer. Environment variables and User Secrets override JSON settings.
+2. For an existing current-schema database, run database/upgrades/001-buyer-completion.sql using sqlcmd -I -b. For a fresh database, run database/CloneEbayBuyer.sql, optionally the demo seed/password scripts, then the upgrade. The CREATE script aborts if the database exists.
+3. Configure Jwt:SigningKey (32+ random characters) using User Secrets or environment variables.
+4. Run the API and frontend:
 
 ```powershell
-$jwtBytes = New-Object byte[] 48
-$jwtRng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
-$jwtRng.GetBytes($jwtBytes)
-dotnet user-secrets set "Jwt:SigningKey" ([Convert]::ToBase64String($jwtBytes)) --project backend/Buyer.API | Out-Null
-$jwtRng.Dispose()
-Remove-Variable jwtBytes, jwtRng
+dotnet run --project backend/Buyer.API --launch-profile http
+# Separate terminal
+cd frontend/buyer-web
+npm ci
+npm run dev -- --host 127.0.0.1
 ```
 
-Backend:
+Frontend http://127.0.0.1:5173; API http://localhost:5127; Swagger /swagger in Development; readiness /health/ready.
 
-```bash
-dotnet run --project backend/Buyer.API
-```
+Demo buyer: seed.buyer01@example.test / Demo@12345. Registration requires verification. Read local test mail at /dev-mailbox when SMTP is not configured. Login is kept in memory; a full reload requires signing in again.
 
-Frontend in another terminal (Windows):
+See docs/11-buyer-completion.md for SMTP, Google OAuth, tax configuration and actual verification limits. PayPal is simulated.
+
+## Checks and delivery
 
 ```powershell
-npm.cmd run dev --prefix frontend/buyer-web
+dotnet test EbayClone.sln -c Release
+cd frontend/buyer-web
+npm run build
+npm run lint
+npm run test:e2e
 ```
 
-On macOS/Linux, use `npm run dev --prefix frontend/buyer-web`.
+E2E and SQL smoke scripts must use an isolated seeded test database/API. Required environment variables and results are documented in docs/11-buyer-completion.md. Performance plans are in performance-tests; rolling deployment instructions are in infrastructure/k8s.
 
-Open the Vite URL shown by the frontend. Swagger is available at `http://localhost:5127/swagger` in Development. Health endpoints are `/health/live` and `/health/ready`.
-
-## Environment
-
-- `ConnectionStrings__BuyerDatabase`: optional SQL Server connection string. The API runs without it during initialization.
-- `Cors__AllowedOrigins__0`: frontend origin.
-- `RateLimiting__PermitLimit` and `RateLimiting__WindowSeconds`: fixed-window API limits.
-- `VITE_API_BASE_URL`: public Buyer API base URL used by the frontend.
-- `Jwt__SigningKey`: required JWT signing secret (at least 32 characters); local Development also reads `Jwt:SigningKey` from User Secrets.
-
-## Build and Test
-
-```bash
-dotnet build EbayClone.sln --configuration Release
-dotnet test EbayClone.sln --configuration Release --no-build
-npm run lint --prefix frontend/buyer-web
-npm run build --prefix frontend/buyer-web
-```
-
-## Containers
-
-```bash
-docker compose up --build
-```
-
-The Compose configuration is intended for local development and requires Docker Desktop.
-
-## Product catalog
-
-Open `/catalog` to browse available products with names, VND prices, images, and server-side pagination. Missing/broken images use a placeholder; empty pages and API failures have dedicated states with recovery actions.
-
-The public endpoint is `GET /api/products?page=1&pageSize=20` (`pageSize` up to 100). It reads the existing database-first schema through a repository and returns one entry per product with the cheapest eligible listing. Auction prices are labeled as the current bid. See `docs/04_API_Contract_Clone_eBay_Buyer.md`, section 3.2, for availability and price selection rules.
-
-Catalog data requires the existing SQL Server database through `ConnectionStrings__BuyerDatabase`, plus the existing JWT startup settings including `Jwt__SigningKey`. No database is created and no seed data is inserted by this feature.
-
-## Known Limitations
-
-- Buyer login and product browsing are implemented; other business workflows and seed data remain pending.
-- The custom `dbo.User` schema versus ASP.NET Core Identity strategy must be approved before authentication persistence is implemented; do not create a second user system.
-- External module abstractions are documented but not implemented yet.
-- Kubernetes and JMeter configurations await deployment and performance requirements.
-- SQL Server is not required for basic API startup; readiness currently reports process health only.
+For Docker, copy .env.example to .env, replace the JWT key/database credentials, and run docker compose up --build. The one-shot db-init service bootstraps a fresh CloneEbayBuyer and applies the upgrade; existing rows are preserved. Remote CI/container/Kubernetes execution is separate from local build verification.

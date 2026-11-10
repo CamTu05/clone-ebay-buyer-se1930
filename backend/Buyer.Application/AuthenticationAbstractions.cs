@@ -8,7 +8,8 @@ public sealed record AuthUser(
     string Role,
     string AccountStatus,
     bool EmailVerified,
-    bool PhoneVerified);
+    bool PhoneVerified,
+    int AuthVersion = 0);
 
 public interface IUserRepository
 {

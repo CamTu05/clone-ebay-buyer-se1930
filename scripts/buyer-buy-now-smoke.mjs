@@ -1,7 +1,7 @@
 import {execFileSync} from 'node:child_process';
 const base=process.env.BUYER_TEST_URL, db=process.env.BUYER_TEST_DATABASE;
 if(!base || !/^CloneEbayBuyer_Test_[A-Za-z0-9_]+$/.test(db??'') || !process.env.BUYER_TEST_PASSWORD)throw Error('Dedicated test URL/database/password required');
-const sql=q=>execFileSync('sqlcmd',['-S',process.env.BUYER_TEST_SQL_SERVER??'.\\SQLEXPRESS','-E','-C','-I','-b','-d',db,'-h','-1','-W','-Q','SET NOCOUNT ON; '+q],{encoding:'utf8'}).trim();
+const sql=q=>execFileSync('sqlcmd',['-S',process.env.BUYER_TEST_SQL_SERVER??'.\\SQLEXPRESS',...(process.env.BUYER_TEST_SQL_USER?['-U',process.env.BUYER_TEST_SQL_USER]:['-E']),'-C','-I','-b','-d',db,'-h','-1','-W','-Q','SET NOCOUNT ON; '+q],{encoding:'utf8'}).trim();
 let checks=0;const check=(v,m)=>{if(!v)throw Error(m);checks++};
 let token;
 async function api(path,method='GET',body,status=200){const r=await fetch(base+path,{method,headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},body:body===undefined?undefined:JSON.stringify(body)});const j=await r.json();check(r.status===status,`${path}: ${r.status} ${j.message}`);return j.data;}

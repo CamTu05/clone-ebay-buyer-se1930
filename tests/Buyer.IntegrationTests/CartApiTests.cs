@@ -83,6 +83,7 @@ public sealed class CartApiTests
                 "Server=(localdb)\\MSSQLLocalDB;Database=BuyerApiTests;Trusted_Connection=True");
             builder.UseSetting("Jwt:SigningKey", SigningKey);
             builder.UseSetting("BuyerLifecycle:Enabled", "false");
+            builder.UseSetting("BuyerSchema", "Legacy");
             builder.UseSetting("Jwt:Issuer", "cart-api-tests");
             builder.UseSetting("Jwt:Audience", "cart-api-tests");
             builder.UseSetting("Jwt:DurationMinutes", "15");

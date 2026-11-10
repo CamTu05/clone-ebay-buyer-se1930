@@ -1,3 +1,7 @@
+import { useAuth } from '../authentication/useAuth'
+import { useLocalCart, mergeLocal } from './localCart'
+import { SavedCartPanel } from './SavedCartPanel'
+import { buyerPost } from '../buyerApi'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ErrorMessage } from '../../shared/components/ErrorMessage'
@@ -10,6 +14,10 @@ import '../account.css'
 const priceFormat = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' })
 
 export function CartPage() {
+ const {isAuthenticated}=useAuth();const local=useLocalCart();const [refresh,setRefresh]=useState(0)
+ return <>{(!isAuthenticated||local.items.length>0)&&<section className="buyer-cart"><h1>{isAuthenticated?'Remaining guest items':'Shopping cart'}</h1>{local.message&&<p role="alert">{local.message}</p>}{!local.items.length&&<p>Your guest cart is empty.</p>}{local.items.map(i=><article key={i.listingId} className="account-panel p-5"><Link to={'/products/'+i.productId}>{i.name}</Link><label className="block">Quantity <input type="number" min="1" max="1000" value={i.quantity} onChange={e=>local.update(i.listingId,Number(e.target.value))}/></label><button className="text-link" onClick={()=>local.remove(i.listingId)}>Remove</button></article>)}{isAuthenticated?<button className="buyer-pill" onClick={()=>void mergeLocal().then(()=>setRefresh(x=>x+1))}>Retry merge into account</button>:<><Link className="buyer-pill" to="/checkout">Guest checkout</Link><p><Link to="/login" state={{from:{pathname:'/cart'}}}>Sign in to merge your cart</Link></p></>}</section>}{isAuthenticated&&<><ServerCart key={refresh}/><SavedCartPanel key={'saved:'+refresh} onChange={()=>setRefresh(x=>x+1)}/></>}</>
+}
+function ServerCart() {
   const navigate = useNavigate()
   const [cart, setCart] = useState<Cart | null>(null)
   const [loadError, setLoadError] = useState('')
@@ -98,7 +106,7 @@ export function CartPage() {
             </div>
             <div className="cart-item-price">
               <p>{priceFormat.format(item.itemTotal)}</p>
-              <button className="cart-item-remove" aria-label={`Remove ${item.title}`} disabled={busyItemId !== null} type="button" onClick={() => remove(item.cartItemId)}>Remove</button>
+              <button className="text-link" disabled={busyItemId !== null} onClick={()=>{setBusyItemId(item.cartItemId);void buyerPost('/api/cart/items/'+item.cartItemId+'/save-for-later').then(()=>{retry();window.dispatchEvent(new Event('buyer:saved-cart'))}).catch(e=>setItemErrors(current=>({...current,[item.cartItemId]:cartErrorMessage(e)}))).finally(()=>setBusyItemId(null))}}>Save for later</button><button className="cart-item-remove" aria-label={`Remove ${item.title}`} disabled={busyItemId !== null} type="button" onClick={() => remove(item.cartItemId)}>Remove</button>
             </div>
           </div>
         </article>)}
@@ -109,7 +117,7 @@ export function CartPage() {
         <div className="cart-summary-row"><span>Items ({cart.items.reduce((total, item) => total + item.quantity, 0)})</span><span>{priceFormat.format(cart.subtotal)}</span></div>
         <div className="cart-summary-row"><span>Shipping</span><span>Not calculated</span></div>
         <div className="cart-summary-row cart-summary-total"><span>Subtotal</span><span>{priceFormat.format(cart.subtotal)}</span></div>
-        <p className="account-note">Choose your delivery address in the next step. Payment and order placement are not available yet.</p>
+        <p className="account-note">Choose your delivery address, shipping service and payment method in checkout.</p>
         {!cart.canCheckout && <p className="mt-3 text-sm text-red-700">Remove unavailable items before continuing.</p>}
       </aside>
     </div>}

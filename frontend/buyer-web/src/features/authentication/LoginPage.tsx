@@ -1,3 +1,4 @@
+import { GoogleSignIn } from './ExternalLoginPage'
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
@@ -78,6 +79,8 @@ export function LoginPage() {
             {isSubmitting ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
+        <GoogleSignIn />
+        <p><Link to="/register">Create an account</Link> · <Link to="/forgot-password">Forgot password?</Link> · <Link to="/resend-verification">Verify email</Link></p>
         <Link className="login-back" to="/catalog">Continue browsing</Link>
         <p className="login-disclosure">Sign in with an account for this buyer application. Your eBay.com account is separate.</p>
     </section>

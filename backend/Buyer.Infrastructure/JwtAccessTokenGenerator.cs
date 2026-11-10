@@ -20,6 +20,7 @@ public sealed class JwtAccessTokenGenerator(IOptions<JwtOptions> options, IClock
             settings.Issuer,
             settings.Audience,
             [
+                new Claim("ver", user.AuthVersion.ToString()),
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
                 new Claim(JwtRegisteredClaimNames.Email, user.Email),
                 new Claim(ClaimTypes.Role, user.Role),
