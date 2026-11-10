@@ -14,7 +14,7 @@ public sealed class GlobalExceptionHandler(
     {
         logger.LogError(exception, "An unhandled exception occurred");
         if (exception is Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException
-            || exception is Microsoft.Data.SqlClient.SqlException { Number: 1205 or 2601 or 2627 }
+            || exception.GetBaseException() is Microsoft.Data.SqlClient.SqlException { Number: 1205 or 2601 or 2627 }
             || exception is Microsoft.EntityFrameworkCore.DbUpdateException { InnerException: Microsoft.Data.SqlClient.SqlException { Number: 1205 or 2601 or 2627 } })
         {
             httpContext.Response.StatusCode = 409;

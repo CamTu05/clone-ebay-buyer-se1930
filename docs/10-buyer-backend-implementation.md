@@ -46,7 +46,7 @@ Frontend đọc `VITE_API_BASE_URL`, mặc định http://localhost:5127. Phải
 
 Các giao dịch checkout/payment/bid dùng Serializable; cạnh tranh gây deadlock/unique conflict trả 409 để client tải lại và thử lại. Không giữ stock khi chỉ thêm giỏ. Checkout PayPal giữ stock 15 phút; COD tạo đơn CONFIRMED nhưng payment PENDING, không giả trạng thái đã thu tiền.
 
-Worker `BuyerLifecycle:Enabled=true` xử lý mỗi 30 giây: checkout quá hạn hoàn tồn kho, auction đến hạn xác định winner. Mặc định tắt để tránh tự thay đổi dữ liệu lịch sử khi chỉ mở ứng dụng/test; bật trong cấu hình môi trường chạy liên tục. Khi tắt, checkout quá hạn không trả tiền được nhưng cần hủy để giải phóng stock.
+Worker `BuyerLifecycle:Enabled=true` xử lý mỗi 30 giây: checkout quá hạn hoàn tồn kho, auction đến hạn xác định winner. Đã bật trong Development; môi trường khác cần bật cấu hình này. Các test endpoint dùng mock/SQLite tắt worker để tách biệt dữ liệu. Khi tắt, checkout quá hạn không trả tiền được nhưng cần hủy để giải phóng stock.
 
 ## Giới hạn rõ ràng
 
@@ -67,3 +67,12 @@ Worker `BuyerLifecycle:Enabled=true` xử lý mỗi 30 giây: checkout quá hạ
 - Readiness test đã đổi sang mong đợi 503 khi DB không tồn tại; test address legacy chọn mapping Legacy rõ ràng để giữ SQLite fixtures. Smoke SQL kiểm tra mapping hiện tại thực tế.
 
 Không coi build/API tests là kiểm chứng giao diện trình duyệt hoặc dịch vụ thanh toán thực.
+
+### Kiểm tra bổ sung sau triển khai
+
+- Script buyer-lifecycle-smoke.mjs đã chạy thành công 10 vòng checkout đồng thời, mỗi vòng đúng một HTTP 200 và một HTTP 409, tồn kho không âm.
+- Kiểm tra worker tự expire checkout kể cả buyer đã bị khóa sau khi đặt hàng, hoàn tồn kho đúng một lần qua nhiều tick.
+- Sửa nhận diện SqlException 1205 được EF bọc trong InvalidOperationException; lỗi cạnh tranh trả 409 thay vì 500.
+- Danh mục sidebar đã đọc GET /api/categories từ DB; timeout FE tăng lên 20 giây cho giao dịch có chờ khóa SQL.
+
+- Kiểm tra bản chạy thật phát hiện User Secrets ghi đè ConnectionStrings:BuyerDatabase sang CloneEbayDB_V2. Đã xóa riêng key ghi đè cũ bằng dotnet user-secrets remove; giữ JWT secret. Đây là nguyên nhân chỉ sửa appsettings trước đó vẫn kết nối sai DB.

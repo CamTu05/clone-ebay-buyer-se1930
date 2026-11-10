@@ -53,7 +53,7 @@ sql('UPDATE Listing SET quantity=1 WHERE id='+last.listingId);
 for(const t of [c,d]) { for(const i of (await api('/api/cart',t)).items) await api('/api/cart/items/'+i.cartItemId,t,'DELETE'); await api('/api/cart/items',t,'POST',{listingId:last.listingId,quantity:1}); }
 const ca=(await api('/api/addresses',c))[0], da=(await api('/api/addresses',d))[0];
 const race=await Promise.all([[c,ca],[d,da]].map(async ([t,ad])=>{const r=await fetch(base+'/api/checkout',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+t},body:JSON.stringify({addressId:ad.id,method:'COD'})});return r.status}));
-check(race.filter(x=>x===200).length===1 && race.filter(x=>x===409).length===1,'last unit protected from concurrent checkout');
+check(race.filter(x=>x===200).length===1 && race.filter(x=>x===409).length===1,'last unit protected from concurrent checkout: '+JSON.stringify(race));
 check(Number(sql('SELECT quantity FROM Listing WHERE id='+last.listingId))===0,'stock never negative');
 const delivered=await api('/api/orders',b);const item=delivered.find(x=>x.shipping?.status==='DELIVERED')?.items[0];
 if(item){

@@ -1,3 +1,4 @@
+import { buyerGet } from '../buyerApi'
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
@@ -10,7 +11,6 @@ import './catalog.css'
 
 const priceFormatter = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' })
 const buyingOptions = [['', 'All listings'], ['AUCTION', 'Auction'], ['FIXED_PRICE', 'Buy It Now']] as const
-const categories = [['Laptops & netbooks', 'laptop'], ['Cell phones & smartphones', 'phone'], ['Cameras & photography', 'camera'], ['Video games & consoles', 'gaming'], ['Clothing, shoes & accessories', 'shoes'], ['Home & garden', 'home']]
 type CatalogState = { requestKey: string; status: 'loading' } | { requestKey: string; status: 'success'; data: ProductPage } | { requestKey: string; status: 'error'; message: string }
 
 function readPositiveInteger(value: string | null, fallback: number, maximum: number): number {
@@ -42,6 +42,8 @@ export function HeartIcon({ filled = false }: { filled?: boolean }) {
 }
 
 export function CatalogPage() {
+  const [categories, setCategories] = useState<{id:number;name:string;slug:string}[]>([])
+  useEffect(() => { const c = new AbortController(); buyerGet<{id:number;name:string;slug:string}[]>('/api/categories', c.signal).then(setCategories).catch(() => { /* Catalog errors remain visible in the result panel. */ }); return () => c.abort() }, [])
   const [searchParams, setSearchParams] = useSearchParams()
   const page = readPositiveInteger(searchParams.get('page'), 1, 2_147_483_647)
   const pageSize = readPositiveInteger(searchParams.get('pageSize'), 20, 100)
@@ -111,7 +113,7 @@ export function CatalogPage() {
     <nav className="eb-breadcrumb" aria-label="Breadcrumb"><Link to="/">Home</Link><span>›</span><Link to="/catalog">All categories</Link>{(query || category) && <><span>›</span><span>{query || category}</span></>}</nav>
     <div className="eb-catalog-layout">
       <aside className="eb-catalog-sidebar" aria-label="Filter products">
-        <div className="eb-filter-section"><h2>Category</h2><Link className="eb-category-all" to="/catalog">All categories</Link><div className="eb-category-links">{categories.map(([name, keyword]) => <Link key={name} to={`/catalog?q=${encodeURIComponent(keyword)}`}>{name}</Link>)}</div></div>
+        <div className="eb-filter-section"><h2>Category</h2><Link className="eb-category-all" to="/catalog">All categories</Link><div className="eb-category-links">{categories.map(c => <Link key={c.id} to={`/catalog?category=${encodeURIComponent(c.slug)}`}>{c.name}</Link>)}</div></div>
         <div className="eb-filter-section"><h2>Shipping to</h2><Link className="eb-shipping-link" to="/addresses">Vietnam <span aria-hidden="true">⌄</span></Link></div>
         <fieldset className="eb-filter-section"><legend>Buying Format</legend>{buyingOptions.map(([value, name]) => <label className="eb-filter-option" key={value}><input type="radio" name="buying-format" checked={listingType === value} onChange={() => setFilter('type', value)} />{name}</label>)}</fieldset>
         <div className="eb-filter-section"><h2>Price</h2><form key={`${minimum}:${maximum}`} onSubmit={applyPrice}><div className="eb-price-inputs"><label><span className="sr-only">Minimum price in VND</span><input type="number" name="min" min="0" step="any" placeholder="Min ₫" defaultValue={minimum} /></label><span>to</span><label><span className="sr-only">Maximum price in VND</span><input type="number" name="max" min="0" step="any" placeholder="Max ₫" defaultValue={maximum} /></label></div><button className="eb-outline-button eb-price-apply" type="submit">Apply price</button></form></div>

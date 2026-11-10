@@ -75,7 +75,8 @@ public sealed class ProfileApiTests
             "TrustServerCertificate=True");
 
         builder.UseSetting("Jwt:SigningKey", SigningKey);
-        builder.UseSetting("Jwt:Issuer", "profile-api-tests");
+        builder.UseSetting("BuyerLifecycle:Enabled", "false");
+            builder.UseSetting("Jwt:Issuer", "profile-api-tests");
         builder.UseSetting("Jwt:Audience", "profile-api-tests");
         builder.UseSetting("Jwt:DurationMinutes", "15");
 

@@ -162,6 +162,7 @@ public sealed class ProductCatalogEndpointTests
             builder.UseSetting(
                 "ConnectionStrings:BuyerDatabase",
                 "Server=(localdb)\\MSSQLLocalDB;Database=BuyerApiTests;Trusted_Connection=True");
+            builder.UseSetting("BuyerLifecycle:Enabled", "false");
             builder.UseSetting("Jwt:Issuer", "BuyerApi.Tests");
             builder.UseSetting("Jwt:Audience", "BuyerApi.Tests.Client");
             builder.UseSetting("Jwt:SigningKey", "test-only-signing-key-at-least-32-characters");

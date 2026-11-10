@@ -40,6 +40,7 @@ public sealed class AddressEndpointTests
         {
             builder.UseSetting("BuyerSchema", "Legacy");
             builder.UseSetting("ConnectionStrings:BuyerDatabase", "Server=unused;Database=unused;Trusted_Connection=True");
+            builder.UseSetting("BuyerLifecycle:Enabled", "false");
             builder.UseSetting("Jwt:Issuer", "Address.Tests");
             builder.UseSetting("Jwt:Audience", "Address.Tests.Client");
             builder.UseSetting("Jwt:SigningKey", Key);
