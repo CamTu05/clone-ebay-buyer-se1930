@@ -117,6 +117,22 @@ public sealed class ProductCatalogEndpointTests
     }
 
     [Fact]
+    public async Task UnavailableCatalogReturns503WithSafeErrorEnvelope()
+    {
+        using var factory = CreateFactory(new StubProductCatalogService { Failure = new CatalogUnavailableException() });
+        using var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/api/products");
+        var envelope = await response.Content.ReadFromJsonAsync<ApiEnvelope<object>>();
+
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+        Assert.NotNull(envelope);
+        Assert.False(envelope.Success);
+        Assert.Null(envelope.Data);
+        Assert.Equal("CATALOG_UNAVAILABLE", Assert.Single(envelope.Errors!).Code);
+    }
+
+    [Fact]
     public async Task ServiceFailureReturnsGenericErrorWithoutLeakingExceptionDetails()
     {
         var service = new StubProductCatalogService

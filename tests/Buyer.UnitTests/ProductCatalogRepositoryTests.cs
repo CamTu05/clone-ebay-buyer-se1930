@@ -179,10 +179,45 @@ public sealed class ProductCatalogRepositoryTests
         Assert.Contains("OFFSET", interceptor.Commands[1]);
     }
 
-    private static CloneEbayDbContext CreateDatabase() => new(
-        new DbContextOptionsBuilder<CloneEbayDbContext>()
+    private static CloneEbayDbContext CreateDatabase()
+    {
+        var database = new CloneEbayDbContext(new DbContextOptionsBuilder<CloneEbayDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options);
+        database.Categories.Add(new Category { id = 1, name = "Electronics", slug = "electronics", isActive = true });
+        database.Users.Add(new User { id = 1, username = "seller", email = "seller@example.test", role = "SELLER", accountStatus = "ACTIVE" });
+        database.Entry(database.Users.Local.Single()).Property(user => user.normalizedUsername).CurrentValue = "SELLER";
+        database.SaveChanges();
+        database.ChangeTracker.Clear();
+        return database;
+    }
+
+    [Fact]
+    public async Task CatalogExcludesInactiveCategoriesAndSellersBeforeCountingAndSelectingPrices()
+    {
+        await using var database = CreateDatabase();
+        database.Categories.Add(new Category { id = 2, name = "Hidden", slug = "hidden", isActive = false });
+        database.Users.Add(new User { id = 2, username = "suspended", email = "suspended@example.test", role = "SELLER", accountStatus = "SUSPENDED" });
+        database.Entry(database.Users.Local.Single()).Property(user => user.normalizedUsername).CurrentValue = "SUSPENDED";
+        var hiddenCategory = ProductWithListing(2);
+        hiddenCategory.categoryId = 2;
+        var suspendedSeller = ProductWithListing(3, listing => listing.sellerId = 2);
+        var available = ProductWithListing(1);
+        var cheaper = NewListing(10, 1, 1);
+        cheaper.sellerId = 2;
+        available.Listings.Add(cheaper);
+        database.Products.AddRange(available, hiddenCategory, suspendedSeller);
+        await database.SaveChangesAsync();
+        database.ChangeTracker.Clear();
+
+        var result = await new ProductCatalogRepository(database).GetAvailableProductsAsync(1, 20, Now, default);
+
+        Assert.Equal(1, result.TotalItems);
+        var item = Assert.Single(result.Items);
+        Assert.Equal(1, item.ProductId);
+        Assert.Equal(100, item.Price);
+        Assert.Equal(1, item.ListingId);
+    }
 
     private static Product ProductWithListing(int id, Action<Listing>? configure = null)
     {

@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { ErrorMessage } from '../../shared/components/ErrorMessage'
 import { getLoginErrorMessage } from './authApi'
 import { useAuth } from './useAuth'
+import '../account.css'
 
 interface LoginFormErrors {
   email?: string
@@ -57,30 +58,28 @@ export function LoginPage() {
     }
   }
 
-  const inputClass = 'mt-2 w-full rounded-lg border border-slate-300 px-3 py-2.5 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100'
-
   return (
-    <div className="mx-auto flex min-h-[65vh] max-w-md items-center">
-      <section className="w-full rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-        <h1 className="text-3xl font-bold tracking-tight">Sign in</h1>
-        <p className="mt-2 text-sm text-slate-600">Access your orders and buyer profile.</p>
-        <form className="mt-8 space-y-5" onSubmit={handleSubmit} noValidate>
-          <div>
-            <label className="text-sm font-medium" htmlFor="email">Email</label>
-            <input className={inputClass} id="email" name="email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} aria-invalid={Boolean(errors.email)} aria-describedby={errors.email ? 'email-error' : undefined} />
-            {errors.email && <p className="mt-1 text-sm text-red-700" id="email-error">{errors.email}</p>}
+    <section className="buyer-login" aria-labelledby="signin-heading">
+        <h1 id="signin-heading">Hello</h1>
+        <p className="login-intro">Sign in to your buyer account.</p>
+        <form onSubmit={handleSubmit} noValidate>
+          <div className="login-field">
+            <label htmlFor="email">Email</label>
+            <input id="email" name="email" type="email" autoComplete="email" placeholder="Email address" value={email} onChange={(event) => setEmail(event.target.value)} aria-invalid={Boolean(errors.email)} aria-describedby={errors.email ? 'email-error' : undefined} disabled={isSubmitting} />
+            {errors.email && <p className="login-error" id="email-error">{errors.email}</p>}
           </div>
-          <div>
-            <label className="text-sm font-medium" htmlFor="password">Password</label>
-            <input className={inputClass} id="password" name="password" type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} aria-invalid={Boolean(errors.password)} aria-describedby={errors.password ? 'password-error' : undefined} />
-            {errors.password && <p className="mt-1 text-sm text-red-700" id="password-error">{errors.password}</p>}
+          <div className="login-field">
+            <label htmlFor="password">Password</label>
+            <input id="password" name="password" type="password" autoComplete="current-password" placeholder="Password" value={password} onChange={(event) => setPassword(event.target.value)} aria-invalid={Boolean(errors.password)} aria-describedby={errors.password ? 'password-error' : undefined} disabled={isSubmitting} />
+            {errors.password && <p className="login-error" id="password-error">{errors.password}</p>}
           </div>
-          {requestError && <div role="alert"><ErrorMessage message={requestError} /></div>}
-          <button className="w-full rounded-lg bg-blue-700 px-4 py-2.5 font-semibold text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60" type="submit" disabled={isSubmitting}>
+          {requestError && <div className="mb-5" role="alert"><ErrorMessage message={requestError} /></div>}
+          <button className="buyer-pill" type="submit" disabled={isSubmitting}>
             {isSubmitting ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
-      </section>
-    </div>
+        <Link className="login-back" to="/catalog">Continue browsing</Link>
+        <p className="login-disclosure">Sign in with an account for this buyer application. Your eBay.com account is separate.</p>
+    </section>
   )
 }

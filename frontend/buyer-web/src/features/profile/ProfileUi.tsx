@@ -37,8 +37,8 @@ export function ProfileAvatar({ username, url, size = 'lg' }: {
   url: string | null
   size?: 'lg' | 'sm' | 'xl'
 }) {
-  const [invalidImage, setInvalidImage] = useState(false)
-  useEffect(() => setInvalidImage(false), [url])
+  const [failedUrl, setFailedUrl] = useState<string | null>(null)
+  const invalidImage = failedUrl === url
   const dimensions = {
     sm: 'h-12 w-12 text-lg',
     lg: 'h-20 w-20 text-3xl sm:h-24 sm:w-24',
@@ -48,7 +48,7 @@ export function ProfileAvatar({ username, url, size = 'lg' }: {
     <div className={`relative flex shrink-0 items-center justify-center overflow-hidden rounded-full border-[3px] border-white bg-[#e7edff] font-semibold text-[#3665f3] shadow-[0_0_0_1px_#dbe3f4] ${dimensions}`}>
       {url && !invalidImage ? (
         <img alt={`${username}'s profile`} className="h-full w-full object-cover" src={url}
-          onError={() => setInvalidImage(true)} referrerPolicy="no-referrer" />
+          onError={() => setFailedUrl(url)} referrerPolicy="no-referrer" />
       ) : (
         <span aria-label="Default profile picture">{(username.trim().charAt(0) || 'U').toUpperCase()}</span>
       )}

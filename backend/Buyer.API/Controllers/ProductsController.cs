@@ -12,6 +12,7 @@ public sealed class ProductsController(IProductCatalogService catalogService, Pr
 {
     [HttpGet]
     [ProducesResponseType<ApiEnvelope<ProductPageResponse>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ApiEnvelope<object>>(StatusCodes.Status503ServiceUnavailable)]
     [ProducesResponseType<ApiEnvelope<object>>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ApiEnvelope<object>>(StatusCodes.Status429TooManyRequests)]
     [ProducesResponseType<ApiEnvelope<object>>(StatusCodes.Status500InternalServerError)]

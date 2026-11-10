@@ -14,6 +14,7 @@ public sealed class ProductCatalogRepository(CloneEbayDbContext dbContext) : IPr
     {
         var listings = dbContext.Listings.AsNoTracking().Where(listing =>
             listing.status == "ACTIVE" &&
+            listing.seller.accountStatus == "ACTIVE" &&
             listing.quantity > 0 &&
             (listing.publishedAt == null || listing.publishedAt <= utcNow) &&
             (listing.endedAt == null || listing.endedAt > utcNow) &&
@@ -23,6 +24,7 @@ public sealed class ProductCatalogRepository(CloneEbayDbContext dbContext) : IPr
               listing.Auction.startTime <= utcNow && listing.Auction.endTime > utcNow)));
 
         var products = dbContext.Products.AsNoTracking()
+            .Where(product => product.category.isActive)
             .Where(product => listings.Any(listing => listing.productId == product.id));
 
         var totalItems = await products.CountAsync(cancellationToken);

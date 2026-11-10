@@ -41,17 +41,32 @@ Copy `.env.example` to `.env` for Docker Compose and `frontend/buyer-web/.env.ex
 
 ## Run
 
+On Windows PowerShell, use `npm.cmd` instead of `npm` if script execution is disabled (`npm.ps1 cannot be loaded`). No execution-policy change is needed.
+
+Before the first backend run, configure `Jwt:SigningKey` (at least 32 characters) in local User Secrets. This PowerShell snippet generates a random key without printing it or committing it to Git. Run it once; replacing the key invalidates existing login tokens.
+
+```powershell
+$jwtBytes = New-Object byte[] 48
+$jwtRng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+$jwtRng.GetBytes($jwtBytes)
+dotnet user-secrets set "Jwt:SigningKey" ([Convert]::ToBase64String($jwtBytes)) --project backend/Buyer.API | Out-Null
+$jwtRng.Dispose()
+Remove-Variable jwtBytes, jwtRng
+```
+
 Backend:
 
 ```bash
 dotnet run --project backend/Buyer.API
 ```
 
-Frontend in another terminal:
+Frontend in another terminal (Windows):
 
-```bash
-npm run dev --prefix frontend/buyer-web
+```powershell
+npm.cmd run dev --prefix frontend/buyer-web
 ```
+
+On macOS/Linux, use `npm run dev --prefix frontend/buyer-web`.
 
 Open the Vite URL shown by the frontend. Swagger is available at `http://localhost:5127/swagger` in Development. Health endpoints are `/health/live` and `/health/ready`.
 
@@ -61,6 +76,7 @@ Open the Vite URL shown by the frontend. Swagger is available at `http://localho
 - `Cors__AllowedOrigins__0`: frontend origin.
 - `RateLimiting__PermitLimit` and `RateLimiting__WindowSeconds`: fixed-window API limits.
 - `VITE_API_BASE_URL`: public Buyer API base URL used by the frontend.
+- `Jwt__SigningKey`: required JWT signing secret (at least 32 characters); local Development also reads `Jwt:SigningKey` from User Secrets.
 
 ## Build and Test
 

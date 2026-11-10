@@ -39,6 +39,7 @@ public static class DependencyInjection
         else
         {
             services.AddScoped<IProductRepository, UnavailableProductRepository>();
+            services.AddScoped<IProductCatalogRepository, UnavailableProductRepository>();
             services.AddScoped<IAddressRepository, UnavailableAddressRepository>();
         }
 

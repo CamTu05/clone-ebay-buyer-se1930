@@ -2,7 +2,8 @@ import { createBrowserRouter } from 'react-router-dom'
 import { LoginPage } from '../features/authentication/LoginPage'
 import { ProtectedRoute } from '../features/authentication/ProtectedRoute'
 import { CatalogPage } from '../features/catalog/CatalogPage'
-import { FeaturePlaceholderPage } from '../shared/components/FeaturePlaceholderPage'
+import { WatchlistPage } from '../features/watchlist/WatchlistPage'
+import { BuyerInfoPage } from './BuyerInfoPage'
 import { AppLayout } from './AppLayout'
 import { HomePage } from './HomePage'
 import { NotFoundPage } from './NotFoundPage'
@@ -21,13 +22,18 @@ export const router = createBrowserRouter([
       { path: 'catalog', element: <CatalogPage /> },
       { path: 'products/:productId', element: <ProductDetailPage /> },
       { path: 'login', element: <LoginPage /> },
+      { path: 'register', element: <BuyerInfoPage kind="register" /> },
+      { path: 'watchlist', element: <WatchlistPage /> },
+      { path: 'deals', element: <BuyerInfoPage kind="deals" /> },
+      { path: 'help', element: <BuyerInfoPage /> },
+      { path: 'notifications', element: <BuyerInfoPage kind="notifications" /> },
       {
         element: <ProtectedRoute />,
         children: [
           { path: 'cart', element: <CartPage /> },
           { path: 'addresses', element: <AddressesPage /> },
           { path: 'checkout', element: <AddressesPage checkout /> },
-          { path: 'orders', element: <FeaturePlaceholderPage title="Orders" /> },
+          { path: 'orders', element: <BuyerInfoPage kind="orders" /> },
           { path: 'profile', element: <ProfilePage /> },
         ],
       },
