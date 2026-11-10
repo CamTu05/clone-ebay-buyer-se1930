@@ -13,7 +13,7 @@ public partial class ShippingOption
 
     public string serviceType { get; set; } = null!;
 
-    public decimal? flatRate { get; set; }
+    public decimal flatRate { get; set; }
 
     public int? estimatedMinDays { get; set; }
 

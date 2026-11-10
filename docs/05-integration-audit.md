@@ -112,7 +112,7 @@ The database correctly separates Product from seller-specific Listing, but the d
 
 ### Duplicate stock fields
 
-Both `Listing.quantity` and `Inventory.quantity` exist in the SQL design. The authoritative stock source and synchronization rule are not defined. Checkout and cart stock behavior must not be implemented until this is clarified.
+The approved scaffold removed Inventory. `Listing.quantity` is the authoritative stock value for catalog and cart availability; checkout must revalidate it before purchase.
 
 ### Guest order access
 
@@ -407,7 +407,7 @@ Do not use `EnsureCreated` and do not automatically call `Database.Migrate()` du
 
 The contract must support concurrency-safe availability and reservation semantics rather than simple `GetQuantity`/`UpdateQuantity` methods. Expected capabilities are availability lookup, atomic reservation, reservation commit/consumption, release, idempotency, and explicit insufficient-stock/concurrency failures.
 
-The SQL schema still contains both `Listing.quantity` and `Inventory.quantity`. The gateway boundary is approved, but the authoritative stock field and synchronization rule remain unresolved. Do not implement cart/checkout stock mutation until the team decides whether `Inventory.quantity` is on-hand stock, whether available stock is `quantity - reservedQuantity`, and whether `Listing.quantity` is legacy/denormalized display data.
+The latest approved schema and scaffold use `Listing.quantity` directly. Inventory is no longer part of Buyer catalog or cart persistence; checkout must revalidate Listing quantity before purchase.
 
 ## 12. API Envelope Decision
 
@@ -433,7 +433,7 @@ These items are not overridden by the approved architecture and require decision
 7. **Social login:** provider priority, account linking, trusted email behavior, callback security, and `(userId, provider)` uniqueness remain unresolved.
 8. **Existing database state:** determine whether each target environment starts empty or already contains SQL-v2-created objects before baselining migrations.
 9. **Schema ownership:** one team/context must own migrations for shared `dbo.User`; Buyer, Seller, and Admin modules must not independently migrate it.
-10. **Inventory authority:** `Listing.quantity` versus `Inventory.quantity`, reservation lifecycle, and gateway semantics remain unresolved.
+10. **Stock authority:** resolved in favor of `Listing.quantity`; checkout reservation lifecycle remains a checkout concern.
 11. **Product/Listing projections:** separation is approved, but search/detail DTO composition and active-listing price presentation remain unagreed.
 12. **Tax:** stored values are seeded as percentages such as `5.0000`; rounding rules and whether shipping is taxable still require confirmation.
 13. **Guest order access:** the schema has no secure guest access-token persistence; email alone must not authorize reads.

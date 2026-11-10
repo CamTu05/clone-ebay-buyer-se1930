@@ -1,7 +1,8 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using Buyer.Application.Features.Profile;
-using Buyer.Application.Features.Profile.DTOs;
+using Buyer.Application.Interfaces.Email;
+using Buyer.Application.Interfaces.Profile;
+using Buyer.Application.DTOs.Profile;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -10,11 +11,13 @@ namespace Buyer.API.Controllers;
 [ApiController]
 [Authorize(Roles = "BUYER")]
 [Route("api/me")]
-public sealed class ProfileController(IProfileService profiles) : ControllerBase
+public sealed class ProfileController(
+    IProfileService profiles,
+    IEmailVerificationService emailVerification) : ControllerBase
 {
     [HttpGet]
     [ProducesResponseType(typeof(ApiEnvelope<ProfileResponse>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Get(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetAsync(CancellationToken cancellationToken)
     {
         if (!TryUserId(out int userId)) return Unauthorized(
             ApiEnvelope<object>.Failure("AUTH_UNAUTHORIZED"));
@@ -25,7 +28,7 @@ public sealed class ProfileController(IProfileService profiles) : ControllerBase
 
     [HttpPatch]
     [ProducesResponseType(typeof(ApiEnvelope<ProfileResponse>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Patch(
+    public async Task<IActionResult> PatchAsync(
         [FromBody] UpdateProfileRequest request,
         CancellationToken cancellationToken)
     {
@@ -35,6 +38,42 @@ public sealed class ProfileController(IProfileService profiles) : ControllerBase
         var result = await profiles.UpdateProfileAsync(
             userId, request, cancellationToken);
         return Respond(result);
+    }
+
+    [HttpPost("email-verification/send")]
+    [ProducesResponseType(typeof(ApiEnvelope<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiEnvelope<object>), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> SendEmailVerification(CancellationToken cancellationToken)
+    {
+        if (!TryUserId(out int userId)) return Unauthorized(
+            ApiEnvelope<object>.Failure("AUTH_UNAUTHORIZED"));
+
+        var result = await emailVerification.SendVerificationCodeAsync(userId, cancellationToken);
+        if (result.IsSuccess)
+        {
+            return Ok(ApiEnvelope<object>.Succeeded(new { sent = true }, result.Message));
+        }
+
+        return BadRequest(ApiEnvelope<object>.Failure(result.ErrorCode ?? "VERIFICATION_SEND_FAILED", result.Message));
+    }
+
+    [HttpPost("email-verification/verify")]
+    [ProducesResponseType(typeof(ApiEnvelope<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiEnvelope<object>), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> VerifyEmail(
+        [FromBody] VerifyEmailCodeRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (!TryUserId(out int userId)) return Unauthorized(
+            ApiEnvelope<object>.Failure("AUTH_UNAUTHORIZED"));
+
+        var result = await emailVerification.VerifyCodeAsync(userId, request.Code, cancellationToken);
+        if (result.IsSuccess)
+        {
+            return Ok(ApiEnvelope<object>.Succeeded(new { verified = true }, result.Message));
+        }
+
+        return BadRequest(ApiEnvelope<object>.Failure(result.ErrorCode ?? "VERIFICATION_FAILED", result.Message));
     }
 
     private bool TryUserId(out int userId)
@@ -53,10 +92,9 @@ public sealed class ProfileController(IProfileService profiles) : ControllerBase
         {
             ProfileFailure.ValidationFailed => StatusCodes.Status400BadRequest,
             ProfileFailure.UserNotFound => StatusCodes.Status404NotFound,
-            ProfileFailure.AccountUnavailable => StatusCodes.Status403Forbidden,
-            ProfileFailure.UsernameTaken or
-            ProfileFailure.UsernameChangeRestricted or
-            ProfileFailure.ConcurrentConflict => StatusCodes.Status409Conflict,
+             ProfileFailure.AccountUnavailable => StatusCodes.Status403Forbidden,
+             ProfileFailure.UsernameTaken or ProfileFailure.UsernameChangeRestricted or
+             ProfileFailure.ConcurrentConflict => StatusCodes.Status409Conflict,
             _ => StatusCodes.Status400BadRequest
         };
 
@@ -64,11 +102,10 @@ public sealed class ProfileController(IProfileService profiles) : ControllerBase
             false,
             result.Failure switch
             {
-                ProfileFailure.ValidationFailed => "Validation failed",
-                ProfileFailure.UsernameChangeRestricted =>
-                    "Username can only be changed once every 30 days",
-                ProfileFailure.UsernameTaken => "Username is unavailable",
+                 ProfileFailure.ValidationFailed => "Validation failed",
+                 ProfileFailure.UsernameTaken => "Username is unavailable",
                 ProfileFailure.ConcurrentConflict => "Profile changed concurrently",
+                ProfileFailure.UsernameChangeRestricted => "Username can only be changed once every 30 days",
                 _ => "Profile request failed"
             },
             null,

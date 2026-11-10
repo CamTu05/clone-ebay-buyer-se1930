@@ -11,9 +11,7 @@ public partial class OrderItem
 
     public int listingId { get; set; }
 
-    public int productId { get; set; }
-
-    public int sellerId { get; set; }
+    public int? productId { get; set; }
 
     public int quantity { get; set; }
 
@@ -27,13 +25,11 @@ public partial class OrderItem
 
     public virtual ICollection<ReturnRequestItem> ReturnRequestItems { get; set; } = new List<ReturnRequestItem>();
 
-    public virtual ICollection<Review> Reviews { get; set; } = new List<Review>();
+    public virtual Review? Review { get; set; }
 
     public virtual Listing listing { get; set; } = null!;
 
     public virtual OrderTable order { get; set; } = null!;
 
-    public virtual Product product { get; set; } = null!;
-
-    public virtual User seller { get; set; } = null!;
+    public virtual Product? product { get; set; }
 }

@@ -1,4 +1,4 @@
-using Buyer.Application.Authentication;
+using Buyer.Application.Interfaces.Authentication;
 
 namespace Buyer.Application.Catalog;
 

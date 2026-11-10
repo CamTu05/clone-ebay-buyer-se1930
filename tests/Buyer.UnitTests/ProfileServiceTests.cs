@@ -1,5 +1,5 @@
-using Buyer.Application.Features.Profile;
-using Buyer.Application.Features.Profile.DTOs;
+using Buyer.Application.Interfaces.Profile;
+using Buyer.Application.DTOs.Profile;
 
 namespace Buyer.UnitTests;
 
@@ -7,7 +7,7 @@ public sealed class ProfileServiceTests
 {
     private static readonly ProfileUserSnapshot Buyer = new(
         12, "buyer_old", "buyer@example.com", null,
-        "https://example.com/old.png", true, false, "BUYER", "ACTIVE");
+        "https://example.com/old.png", true, "BUYER", "ACTIVE");
 
     [Fact]
     public async Task GetUsesAuthenticatedUserId()
@@ -34,8 +34,11 @@ public sealed class ProfileServiceTests
     [InlineData("BUYER", "SUSPENDED")]
     public async Task UpdateRejectsWrongRoleOrState(string role, string status)
     {
-        var repo = new FakeRepository { User = Buyer with
-            { Role = role, AccountStatus = status } };
+        var repo = new FakeRepository
+        {
+            User = Buyer with
+            { Role = role, AccountStatus = status }
+        };
         var result = await new ProfileService(repo)
             .UpdateProfileAsync(12, new() { AvatarUrl = "https://example.com/new.png" });
         Assert.Equal(ProfileFailure.AccountUnavailable, result.Failure);
@@ -109,7 +112,6 @@ public sealed class ProfileServiceTests
 
     [Theory]
     [InlineData(ProfileSaveStatus.UsernameTaken, ProfileFailure.UsernameTaken)]
-    [InlineData(ProfileSaveStatus.UsernameChangeRestricted, ProfileFailure.UsernameChangeRestricted)]
     [InlineData(ProfileSaveStatus.ConcurrentConflict, ProfileFailure.ConcurrentConflict)]
     [InlineData(ProfileSaveStatus.AccountUnavailable, ProfileFailure.AccountUnavailable)]
     [InlineData(ProfileSaveStatus.UserNotFound, ProfileFailure.UserNotFound)]

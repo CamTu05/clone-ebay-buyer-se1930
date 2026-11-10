@@ -1,6 +1,6 @@
 using System.Data;
-using Buyer.Application.Addresses;
-using Buyer.Application.Authentication;
+using Buyer.Application.Interfaces.Addresses;
+using Buyer.Application.Interfaces.Authentication;
 using Buyer.Domain.Addresses;
 using Buyer.Infrastructure.BuyerSchema.Models;
 using Microsoft.Data.SqlClient;

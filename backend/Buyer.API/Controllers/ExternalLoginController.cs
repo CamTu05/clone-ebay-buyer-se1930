@@ -1,7 +1,7 @@
 using System.Data;
 using System.Text.Json;
 using Buyer.Application;
-using Buyer.Application.Authentication;
+using Buyer.Application.Interfaces.Authentication;
 using Buyer.Infrastructure.BuyerSchema;
 using Buyer.Infrastructure.BuyerSchema.Models;
 using Microsoft.AspNetCore.Authentication;

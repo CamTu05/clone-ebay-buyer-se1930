@@ -27,7 +27,7 @@ public sealed class GlobalExceptionHandler(
             await httpContext.Response.WriteAsJsonAsync(ApiEnvelope<object>.Failure(rule.Code, rule.Message), cancellationToken);
             return true;
         }
-        if (httpContext.Request.Path.StartsWithSegments("/api/products")
+        if ((httpContext.Request.Path.StartsWithSegments("/api/products") || httpContext.Request.Path.StartsWithSegments("/api/listings"))
             && exception is CatalogUnavailableException)
         {
             httpContext.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;

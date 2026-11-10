@@ -4,12 +4,24 @@ export interface AuthUser {
   email: string
   role: string
   emailVerified: boolean
-  phoneVerified: boolean
 }
 
 export interface LoginRequest {
   email: string
   password: string
+}
+
+export interface RegisterRequest {
+  email: string
+  password: string
+  username: string
+}
+
+export interface RegisterData {
+  accessToken: string
+  tokenType: string
+  expiresAt: string
+  user: AuthUser
 }
 
 export interface LoginData {

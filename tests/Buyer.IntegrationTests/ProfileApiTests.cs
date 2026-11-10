@@ -3,8 +3,8 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text;
-using Buyer.Application.Features.Profile;
-using Buyer.Application.Features.Profile.DTOs;
+using Buyer.Application.Interfaces.Profile;
+using Buyer.Application.DTOs.Profile;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
@@ -115,7 +115,7 @@ public sealed class ProfileApiTests
             LastId = authenticatedUserId;
             return Task.FromResult(ProfileServiceResult.Success(
                 new ProfileResponse(authenticatedUserId, "mybuyer42",
-                    "buyer@example.com", null, null, true, false)));
+                    "buyer@example.com", null, null, true)));
         }
 
         public Task<ProfileServiceResult> UpdateProfileAsync(int authenticatedUserId,
@@ -128,7 +128,7 @@ public sealed class ProfileApiTests
                     new ProfileFieldError("PROFILE_USERNAME_TAKEN", "username"))
                 : ProfileServiceResult.Success(new ProfileResponse(
                     authenticatedUserId, request.Username ?? "mybuyer42",
-                    "buyer@example.com", null, request.AvatarUrl, true, false)));
+                    "buyer@example.com", null, request.AvatarUrl, true)));
         }
     }
 }

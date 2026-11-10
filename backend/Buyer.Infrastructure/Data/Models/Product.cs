@@ -15,8 +15,6 @@ public partial class Product
 
     public string? brand { get; set; }
 
-    public string? itemCondition { get; set; }
-
     public DateTime createdAt { get; set; }
 
     public DateTime updatedAt { get; set; }

@@ -1,6 +1,7 @@
+using Buyer.API.Filters;
 using Microsoft.EntityFrameworkCore;
 using Buyer.Application.Catalog;
-using Buyer.Application.Addresses;
+using Buyer.Application.Interfaces.Addresses;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using System.Threading.RateLimiting;
@@ -34,6 +35,9 @@ builder.Services.AddScoped<AddressExceptionFilter>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
+    var defaultSchemaId = new Swashbuckle.AspNetCore.SwaggerGen.SchemaGeneratorOptions().SchemaIdSelector;
+    options.CustomSchemaIds(type => type == typeof(Buyer.Application.DTOs.ListingCatalog.ProductImageResponse)
+        ? "ListingProductImageResponse" : defaultSchemaId(type));
     var bearerScheme = new OpenApiSecurityScheme
     {
         Name = "Authorization",

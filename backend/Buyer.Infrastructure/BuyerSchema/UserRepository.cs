@@ -1,4 +1,4 @@
-using Buyer.Application.Authentication;
+using Buyer.Application.Interfaces.Authentication;
 using Buyer.Infrastructure.BuyerSchema;
 using Microsoft.EntityFrameworkCore;
 
@@ -23,6 +23,51 @@ public sealed class UserRepository(BuyerSchemaContext dbContext) : IUserReposito
                 user.emailVerified,
                 false, user.authVersion))
             .SingleOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<bool> ExistsByNormalizedEmailAsync(
+        string normalizedEmail,
+        CancellationToken cancellationToken)
+    {
+        return await dbContext.Users
+            .AsNoTracking()
+            .AnyAsync(user => user.email.Trim().ToUpper() == normalizedEmail, cancellationToken);
+    }
+
+    public async Task<bool> ExistsByNormalizedUsernameAsync(
+        string normalizedUsername,
+        CancellationToken cancellationToken)
+    {
+        return await dbContext.Users
+            .AsNoTracking()
+            .AnyAsync(user => user.username.Trim().ToUpper() == normalizedUsername, cancellationToken);
+    }
+
+    public async Task<int> CreateAsync(
+        string email,
+        string username,
+        string passwordHash,
+        string role,
+        string accountStatus,
+        DateTime createdAtUtc,
+        CancellationToken cancellationToken)
+    {
+        var user = new Models.User
+        {
+            email = email,
+            username = username,
+            passwordHash = passwordHash,
+            role = role,
+            accountStatus = accountStatus,
+            createdAt = createdAtUtc,
+            updatedAt = createdAtUtc,
+            emailVerified = false
+        };
+
+        dbContext.Users.Add(user);
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        return user.id;
     }
 
     public async Task RecordSuccessfulLoginAsync(

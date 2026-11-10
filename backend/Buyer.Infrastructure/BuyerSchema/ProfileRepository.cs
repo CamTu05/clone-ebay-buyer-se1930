@@ -1,4 +1,4 @@
-using Buyer.Application.Features.Profile;
+using Buyer.Application.Interfaces.Profile;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
 
@@ -6,7 +6,7 @@ namespace Buyer.Infrastructure.BuyerSchema;
 public sealed class ProfileRepository(BuyerSchemaContext db) : IProfileRepository
 {
     public async Task<ProfileUserSnapshot?> GetByUserIdAsync(int id, CancellationToken ct = default) =>
-        await db.Users.AsNoTracking().Where(u => u.id == id).Select(u => new ProfileUserSnapshot(u.id, u.username, u.email, u.phoneNumber, u.avatarURL, u.emailVerified, false, u.role, u.accountStatus, u.usernameChangedAt)).SingleOrDefaultAsync(ct);
+        await db.Users.AsNoTracking().Where(u => u.id == id).Select(u => new ProfileUserSnapshot(u.id, u.username, u.email, u.phoneNumber, u.avatarURL, u.emailVerified, u.role, u.accountStatus, u.usernameChangedAt, false)).SingleOrDefaultAsync(ct);
     public Task<bool> IsUsernameTakenAsync(string name, int excludeUserId, CancellationToken ct = default) => db.Users.AnyAsync(u => u.id != excludeUserId && u.username.ToUpper() == name.ToUpper(), ct);
     public async Task<ProfileSaveResult> SaveProfileAsync(ProfileChanges changes, CancellationToken ct = default)
     {

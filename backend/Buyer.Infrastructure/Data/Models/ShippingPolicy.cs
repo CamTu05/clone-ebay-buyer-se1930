@@ -11,8 +11,6 @@ public partial class ShippingPolicy
 
     public string name { get; set; } = null!;
 
-    public string shippingType { get; set; } = null!;
-
     public bool isActive { get; set; }
 
     public DateTime createdAt { get; set; }

@@ -1,5 +1,5 @@
-using Buyer.Application.Authentication;
-using Buyer.Application.Features.Cart;
+using Buyer.Application.Interfaces.Authentication;
+using Buyer.Application.Interfaces.Cart;
 using Microsoft.EntityFrameworkCore;
 
 namespace Buyer.Infrastructure.BuyerSchema;

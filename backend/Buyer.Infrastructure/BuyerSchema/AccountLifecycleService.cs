@@ -57,7 +57,7 @@ public sealed class AccountLifecycleService(BuyerSchemaContext db, Microsoft.Ext
     {
         Password(password); await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
         var user = await db.Users.SingleAsync(x => x.id == uid, ct);
-        if (user.passwordHash == null || new PasswordHasher<User>().VerifyHashedPassword(user, user.passwordHash, current) == PasswordVerificationResult.Failed) throw new BuyerRuleException("PASSWORD_INVALID", "Current password is incorrect.", 400);
+        if (user.passwordHash == null || new PasswordHasher<User>().VerifyHashedPassword(user, user.passwordHash, current) == Microsoft.AspNetCore.Identity.PasswordVerificationResult.Failed) throw new BuyerRuleException("PASSWORD_INVALID", "Current password is incorrect.", 400);
         user.passwordHash = new PasswordHasher<User>().HashPassword(user, password); user.authVersion++; user.updatedAt = DateTime.UtcNow;
         foreach (var token in await db.VerificationTokens.Where(x => x.userId == uid && x.usedAt == null && x.tokenType == "PASSWORD_RESET").ToListAsync(ct)) token.usedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct); await tx.CommitAsync(ct);

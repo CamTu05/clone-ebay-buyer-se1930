@@ -1,6 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using Buyer.Application.Features.Cart;
+using Buyer.Application.Interfaces.Cart;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,7 +13,7 @@ public sealed class CartController(ICartService service) : ControllerBase
 {
     [HttpGet]
     [ProducesResponseType(typeof(ApiEnvelope<CartResponse>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Get(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetAsync(CancellationToken cancellationToken)
     {
         if (!TryUserId(out var userId))
             return Unauthorized(ApiEnvelope<object>.Failure("AUTH_UNAUTHORIZED"));
@@ -23,7 +23,7 @@ public sealed class CartController(ICartService service) : ControllerBase
 
     [HttpPatch("items/{cartItemId:int}")]
     [ProducesResponseType(typeof(ApiEnvelope<CartResponse>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> UpdateQuantity(int cartItemId,
+    public async Task<IActionResult> UpdateQuantityAsync(int cartItemId,
         UpdateCartItemQuantityRequest request, CancellationToken cancellationToken)
     {
         if (!TryUserId(out var userId))
@@ -34,7 +34,7 @@ public sealed class CartController(ICartService service) : ControllerBase
 
     [HttpDelete("items/{cartItemId:int}")]
     [ProducesResponseType(typeof(ApiEnvelope<CartResponse>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Remove(int cartItemId, CancellationToken cancellationToken)
+    public async Task<IActionResult> RemoveAsync(int cartItemId, CancellationToken cancellationToken)
     {
         if (!TryUserId(out var userId))
             return Unauthorized(ApiEnvelope<object>.Failure("AUTH_UNAUTHORIZED"));

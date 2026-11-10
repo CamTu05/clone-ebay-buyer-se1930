@@ -13,6 +13,8 @@ public partial class CartItem
 
     public int quantity { get; set; }
 
+    public string status { get; set; } = null!;
+
     public DateTime addedAt { get; set; }
 
     public virtual Cart cart { get; set; } = null!;

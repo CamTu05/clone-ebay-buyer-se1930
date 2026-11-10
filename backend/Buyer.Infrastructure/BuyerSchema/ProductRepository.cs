@@ -13,7 +13,7 @@ public sealed class ProductRepository(BuyerSchemaContext db) : IProductRepositor
                 && p.Listings.Any(l => l.status == "ACTIVE" && l.seller.accountStatus == "ACTIVE"))
             .Select(p => new ProductDetailResponse(p.id, p.title, p.description, p.brand, p.Listings.Select(l => l.itemCondition).FirstOrDefault(),
                 p.ProductImages.OrderByDescending(i => i.isPrimary).ThenBy(i => i.sortOrder).ThenBy(i => i.id)
-                    .Select(i => new ProductImageResponse(i.id, i.imageUrl, i.isPrimary)).ToList(),
+                    .Select(i => new Buyer.Application.Catalog.ProductImageResponse(i.id, i.imageUrl, i.isPrimary)).ToList(),
                 p.Listings.Where(l => l.status == "ACTIVE" && l.seller.accountStatus == "ACTIVE")
                     .OrderBy(l => l.id)
                     .Select(l => new ProductListingResponse(l.id, l.listingType,

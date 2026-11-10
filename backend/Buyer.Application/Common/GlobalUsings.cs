@@ -1,0 +1,16 @@
+global using Buyer.Application.Common.Addresses;
+global using Buyer.Application.Common.Authentication;
+global using Buyer.Application.Common.Cart;
+global using Buyer.Application.Common.Profile;
+global using Buyer.Application.DTOs.Addresses;
+global using Buyer.Application.DTOs.Authentication;
+global using Buyer.Application.DTOs.Cart;
+global using Buyer.Application.DTOs.Email;
+global using Buyer.Application.DTOs.ListingCatalog;
+global using Buyer.Application.DTOs.Profile;
+global using Buyer.Application.Interfaces.Addresses;
+global using Buyer.Application.Interfaces.Authentication;
+global using Buyer.Application.Interfaces.Cart;
+global using Buyer.Application.Interfaces.Email;
+global using Buyer.Application.Interfaces.ListingCatalog;
+global using Buyer.Application.Interfaces.Profile;

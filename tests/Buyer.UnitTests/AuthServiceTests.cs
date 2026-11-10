@@ -1,11 +1,11 @@
-using Buyer.Application.Authentication;
+using Buyer.Application.Interfaces.Authentication;
 
 namespace Buyer.UnitTests;
 
 public sealed class AuthServiceTests
 {
     private static readonly AuthUser ActiveBuyer = new(
-        1, "buyer@example.com", "buyer", "hash", "BUYER", "ACTIVE", true, false);
+        1, "buyer@example.com", "buyer", "hash", "BUYER", "ACTIVE", true);
 
     [Fact]
     public async Task LoginReturnsTokenForValidCredentials()
@@ -94,6 +94,7 @@ public sealed class AuthServiceTests
         public string? UpdatedHash { get; private set; }
         public DateTime? LastLoginAtUtc { get; private set; }
         public int SaveCalls { get; private set; }
+        private readonly List<(string Email, string Username)> createdUsers = [];
 
         public Task<AuthUser?> FindByNormalizedEmailAsync(
             string normalizedEmail,
@@ -101,6 +102,35 @@ public sealed class AuthServiceTests
         {
             ReceivedEmail = normalizedEmail;
             return Task.FromResult(user);
+        }
+
+        public Task<bool> ExistsByNormalizedEmailAsync(
+            string normalizedEmail,
+            CancellationToken cancellationToken)
+        {
+            return Task.FromResult(user is not null
+                && user.Email.Trim().ToUpperInvariant() == normalizedEmail);
+        }
+
+        public Task<bool> ExistsByNormalizedUsernameAsync(
+            string normalizedUsername,
+            CancellationToken cancellationToken)
+        {
+            return Task.FromResult(user is not null
+                && user.Username.Trim().ToUpperInvariant() == normalizedUsername);
+        }
+
+        public Task<int> CreateAsync(
+            string email,
+            string username,
+            string passwordHash,
+            string role,
+            string accountStatus,
+            DateTime createdAtUtc,
+            CancellationToken cancellationToken)
+        {
+            createdUsers.Add((email, username));
+            return Task.FromResult(42);
         }
 
         public Task RecordSuccessfulLoginAsync(

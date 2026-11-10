@@ -1,11 +1,11 @@
-using Buyer.Application.Features.Cart;
+using Buyer.Application.Interfaces.Cart;
 
 namespace Buyer.UnitTests;
 
 public sealed class CartServiceTests
 {
     private static readonly CartResponse Cart = new(1,
-        [new(5, 11, 7, "Camera", null, new(2, "seller", null),
+        [new(5, 11, 7, "Camera", null, new(2, "seller"),
             100m, 2, 200m, 5, true, null)], 200m, "VND", true);
 
     [Fact]

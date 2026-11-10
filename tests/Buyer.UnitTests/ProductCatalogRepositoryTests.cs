@@ -186,7 +186,6 @@ public sealed class ProductCatalogRepositoryTests
             .Options);
         database.Categories.Add(new Category { id = 1, name = "Electronics", slug = "electronics", isActive = true });
         database.Users.Add(new User { id = 1, username = "seller", email = "seller@example.test", role = "SELLER", accountStatus = "ACTIVE" });
-        database.Entry(database.Users.Local.Single()).Property(user => user.normalizedUsername).CurrentValue = "SELLER";
         database.SaveChanges();
         database.ChangeTracker.Clear();
         return database;
@@ -198,7 +197,6 @@ public sealed class ProductCatalogRepositoryTests
         await using var database = CreateDatabase();
         database.Categories.Add(new Category { id = 2, name = "Hidden", slug = "hidden", isActive = false });
         database.Users.Add(new User { id = 2, username = "suspended", email = "suspended@example.test", role = "SELLER", accountStatus = "SUSPENDED" });
-        database.Entry(database.Users.Local.Single()).Property(user => user.normalizedUsername).CurrentValue = "SUSPENDED";
         var hiddenCategory = ProductWithListing(2);
         hiddenCategory.categoryId = 2;
         var suspendedSeller = ProductWithListing(3, listing => listing.sellerId = 2);
@@ -236,7 +234,9 @@ public sealed class ProductCatalogRepositoryTests
         listingType = "FIXED_PRICE",
         status = "ACTIVE",
         price = price,
-        quantity = 1
+        quantity = 1,
+        title = $"Listing {id}",
+        rowVersion = []
     };
 
     private static void MakeAuction(Listing listing)

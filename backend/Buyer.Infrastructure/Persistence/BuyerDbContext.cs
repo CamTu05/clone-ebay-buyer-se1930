@@ -1,1 +1,0 @@
-namespace Buyer.Infrastructure.Persistence;

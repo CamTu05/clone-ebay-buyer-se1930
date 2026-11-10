@@ -1,4 +1,4 @@
-using Buyer.Application.Authentication;
+using Buyer.Application.Interfaces.Authentication;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
@@ -15,7 +15,7 @@ public sealed class AuthController(IAuthService authService) : ControllerBase
     [ProducesResponseType<ApiEnvelope<object>>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ApiEnvelope<object>>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ApiEnvelope<object>>(StatusCodes.Status429TooManyRequests)]
-    public async Task<IActionResult> Login(LoginRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> LoginAsync(LoginRequest request, CancellationToken cancellationToken)
     {
         var result = await authService.LoginAsync(request, cancellationToken);
         if (result.IsSuccess)
@@ -36,15 +36,4 @@ public sealed class AuthController(IAuthService authService) : ControllerBase
                 "Invalid email or password"))
         };
     }
-}
-
-public sealed record ApiError(string Code, string? Field);
-
-public sealed record ApiEnvelope<T>(bool Success, string Message, T? Data, IReadOnlyList<ApiError>? Errors)
-{
-    public static ApiEnvelope<T> Succeeded(T data, string message = "Success") =>
-        new(true, message, data, null);
-
-    public static ApiEnvelope<T> Failure(string code, string message = "Request failed", string? field = null) =>
-        new(false, message, default, [new ApiError(code, field)]);
 }

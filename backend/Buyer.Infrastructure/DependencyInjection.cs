@@ -1,13 +1,14 @@
-using Buyer.Application.Addresses;
+using Buyer.Application.Interfaces.Addresses;
 using Buyer.Application.Catalog;
-using Buyer.Application.Authentication;
-using Buyer.Application.Features.Profile;
-using Buyer.Application.Features.Cart;
+using Buyer.Application.Interfaces.Authentication;
+using Buyer.Application.Interfaces.Profile;
+using Buyer.Application.Interfaces.Cart;
 using Buyer.Infrastructure.Authentication;
 using Buyer.Infrastructure.Catalog;
 using Buyer.Infrastructure.Data;
+using Buyer.Infrastructure.Repositories.Addresses;
 using Buyer.Infrastructure.Data.Models;
-using Buyer.Infrastructure.Profiles;
+using Buyer.Infrastructure.Repositories.Profile;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -76,6 +77,12 @@ public static class DependencyInjection
             services.AddScoped<BuyerSchema.AccountLifecycleService>();
         }
 
+        services.AddScoped<IAddressService, AddressService>();
+        services.AddScoped<IListingCatalogRepository, Buyer.Infrastructure.Repositories.ListingCatalog.ListingCatalogRepository>();
+        services.AddScoped<IListingCatalogService, ListingCatalogService>();
+        services.Configure<Email.SmtpOptions>(configuration.GetSection(Email.SmtpOptions.SectionName));
+        services.AddScoped<IEmailSender, Email.SmtpEmailSender>();
+        services.AddScoped<IEmailVerificationService, Email.EmailVerificationService>();
         return services;
     }
 }
