@@ -38,6 +38,7 @@ public sealed class AddressEndpointTests
         }
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
+            builder.UseSetting("BuyerSchema", "Legacy");
             builder.UseSetting("ConnectionStrings:BuyerDatabase", "Server=unused;Database=unused;Trusted_Connection=True");
             builder.UseSetting("Jwt:Issuer", "Address.Tests");
             builder.UseSetting("Jwt:Audience", "Address.Tests.Client");
@@ -148,7 +149,12 @@ public sealed class AddressEndpointTests
         using var other = factory.Client(2);
         var response = await owner.PostAsJsonAsync("/api/addresses?userId=2", new
         {
-            userId = 2, fullName = "Buyer", phone = "0901234567", street = "Main street", city = "Hanoi", countryCode = "VN"
+            userId = 2,
+            fullName = "Buyer",
+            phone = "0901234567",
+            street = "Main street",
+            city = "Hanoi",
+            countryCode = "VN"
         });
         var address = (await response.Content.ReadFromJsonAsync<ApiEnvelope<AddressResponse>>())!.Data!;
         Assert.Empty((await other.GetFromJsonAsync<ApiEnvelope<AddressResponse[]>>("/api/addresses"))!.Data!);

@@ -120,8 +120,8 @@ export function ProfilePage() {
           </div>
           <div className="account-profile-details">
             <Row icon="user" label="Username" value={profile.username}
-              description="You can change your username once every 30 days."
-              action={() => { setNotice(''); setModal('username') }} />
+              description="Username changes are unavailable for the current database schema."
+               />
             <Row icon="mail" label="Email address" value={profile.email}
               description={profile.emailVerified ? 'Email verified' : 'Email not verified'} />
             <Row icon="phone" label="Phone number" value={profile.phoneNumber || 'Not provided'}

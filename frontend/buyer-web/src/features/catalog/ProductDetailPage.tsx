@@ -1,5 +1,7 @@
+import { useAuth } from '../authentication/useAuth'
+import { buyerPost, buyerError } from '../buyerApi'
 import { useEffect, useRef, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ErrorMessage } from '../../shared/components/ErrorMessage'
 import { Loading } from '../../shared/components/Loading'
 import { useWatchlist } from '../watchlist/watchlistStore'
@@ -14,6 +16,20 @@ const priceFormat = new Intl.NumberFormat('vi-VN', { style: 'currency', currency
 
 export function ProductDetailPage() {
   const { productId = '' } = useParams()
+  const { isAuthenticated } = useAuth()
+  const navigate = useNavigate()
+  const [maximumBid, setMaximumBid] = useState('')
+  const [actionError, setActionError] = useState('')
+  const [busy, setBusy] = useState(false)
+  async function purchase(auction: boolean) {
+    if (!isAuthenticated) { navigate('/login'); return }
+    if (!listing) return
+    setBusy(true); setActionError('')
+    try {
+      if (auction) { await buyerPost('/api/auctions/' + listing.auctionId + '/bids', { maximumBid: Number(maximumBid) }); setAttempt(x => x + 1) }
+      else { await buyerPost('/api/cart/items', { listingId: listing.listingId, quantity: 1 }); navigate('/cart') }
+    } catch (e) { setActionError(buyerError(e)) } finally { setBusy(false) }
+  }
   const [attempt, setAttempt] = useState(0)
   const requestKey = `${productId}:${attempt}`
   const [response, setResponse] = useState<{ key: string; product: ProductDetail | null; error: string } | null>(null)
@@ -56,8 +72,8 @@ export function ProductDetailPage() {
             {listing && <div className="eb-product-seller"><span className="eb-seller-avatar" aria-hidden="true">{listing.seller.username.slice(0, 1).toUpperCase()}</span><div><h2>{listing.seller.storeName ?? listing.seller.username}</h2><p>Seller: {listing.seller.username}</p></div></div>}
             {product.listings.length > 1 && <label className="eb-listing-select">Choose a listing<select value={listing?.listingId} onChange={event => setListingSelection({ key: requestKey, id: Number(event.target.value) })}>{product.listings.map(item => <option key={item.listingId} value={item.listingId}>{item.seller.storeName ?? item.seller.username} · {item.listingType === 'AUCTION' ? 'Auction' : 'Buy It Now'} · {item.price === null ? 'Price unavailable' : priceFormat.format(item.price)}</option>)}</select></label>}
             <div className="eb-product-price-block"><p className="eb-product-price">{listing?.price !== null && listing?.price !== undefined ? priceFormat.format(listing.price) : 'Price unavailable'}</p>{listing && <p>{listing.listingType === 'AUCTION' ? 'Current bid · Auction' : 'Buy It Now'}</p>}</div>
-            <dl className="eb-product-condition"><dt>Condition:</dt><dd>{product.condition || 'Not specified'}</dd>{product.brand && <><dt>Brand:</dt><dd>{product.brand}</dd></>}</dl>
-            {listing ? <div className="eb-purchase-actions"><button className="eb-blue-button" type="button" disabled>{listing.listingType === 'AUCTION' ? 'Place bid' : 'Buy It Now'}</button>{listing.listingType !== 'AUCTION' && <button className="eb-outline-button" type="button" disabled>Add to cart</button>}<button className="eb-outline-button eb-watch-detail" type="button" disabled={!summary} aria-pressed={watchlist.has(product.productId)} onClick={() => summary && watchlist.toggle(summary)}><HeartIcon filled={watchlist.has(product.productId)} />{watchlist.has(product.productId) ? 'Added to Watchlist' : 'Add to Watchlist'}</button><p className="eb-purchase-unavailable">{listing.listingType === 'AUCTION' ? 'Bidding is not available yet.' : 'Purchasing this item is not available yet.'} You can save it to your Watchlist on this device.</p></div> : <div className="eb-no-listing">This item has no active listings. <Link to="/catalog">Explore similar items</Link></div>}
+            <dl className="eb-product-condition"><dt>Condition:</dt><dd>{listing?.condition || product.condition || 'Not specified'}</dd>{product.brand && <><dt>Brand:</dt><dd>{product.brand}</dd></>}</dl>
+            {listing ? <div className="eb-purchase-actions">{listing.listingType === 'AUCTION' && <label>Your maximum bid (VND)<input type="number" min="1" value={maximumBid} onChange={e => setMaximumBid(e.target.value)} /></label>}<button className="eb-blue-button" type="button" disabled={busy || (listing.listingType === 'AUCTION' && (!listing.auctionId || !maximumBid))} onClick={() => void purchase(listing.listingType === 'AUCTION')}>{busy ? 'Please wait…' : listing.listingType === 'AUCTION' ? 'Place bid' : 'Add to cart'}</button>{(actionError || watchlist.error) && <p role="alert">{actionError || watchlist.error}</p>}<button className="eb-outline-button eb-watch-detail" type="button" disabled={!summary} aria-pressed={watchlist.has(product.productId)} onClick={() => summary && watchlist.toggle(summary)}><HeartIcon filled={watchlist.has(product.productId)} />{watchlist.has(product.productId) ? 'Added to Watchlist' : 'Add to Watchlist'}</button></div> : <div className="eb-no-listing">This item has no active listings. <Link to="/catalog">Explore similar items</Link></div>}
             <div className="eb-product-delivery"><div><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="M3 6h12v11H3zM15 10h3l3 4v3h-6" /><circle cx="7" cy="18" r="2" fill="white" /><circle cx="18" cy="18" r="2" fill="white" /></svg><p><strong>Shipping</strong><span>Delivery details have not been provided.</span></p></div><div><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="M3 10a9 9 0 1 1 1 8M3 4v6h6" /></svg><p><strong>Returns</strong><span>Check the listing description for return information.</span></p></div></div>
           </div>
         </div>

@@ -4,6 +4,8 @@ public sealed record ProductCatalogPage(IReadOnlyList<ProductSummaryResponse> It
 
 public interface IProductCatalogRepository
 {
+    Task<ProductCatalogPage> SearchAsync(ProductListRequest request, DateTime utcNow, CancellationToken ct)
+        => GetAvailableProductsAsync(request.Page, request.PageSize, utcNow, ct);
     Task<ProductCatalogPage> GetAvailableProductsAsync(
         int page,
         int pageSize,

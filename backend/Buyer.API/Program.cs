@@ -57,6 +57,8 @@ builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddHealthChecks();
 builder.Services.AddInfrastructure(builder.Configuration);
+if (builder.Configuration.GetValue<string>("BuyerSchema") == "V3" && builder.Configuration.GetValue<bool>("BuyerLifecycle:Enabled"))
+    builder.Services.AddHostedService<Buyer.API.BuyerLifecycleWorker>();
 var jwt = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -153,7 +155,16 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapHealthChecks("/health/live");
-app.MapHealthChecks("/health/ready");
+app.MapGet("/health/ready", async (IServiceProvider services, CancellationToken ct) =>
+{
+    try
+    {
+        var db = services.GetService<Buyer.Infrastructure.BuyerSchema.BuyerSchemaContext>();
+        if (db is null || !await db.Database.CanConnectAsync(ct)) return Results.StatusCode(503);
+        return Results.Ok(new { status = "ready", database = "connected" });
+    }
+    catch { return Results.StatusCode(503); }
+});
 app.MapControllers().RequireRateLimiting("Api");
 
 app.Run();

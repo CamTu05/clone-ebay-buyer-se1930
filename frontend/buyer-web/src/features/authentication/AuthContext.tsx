@@ -1,3 +1,4 @@
+import { setWatchlistAccount } from '../watchlist/watchlistStore'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { setAccessToken } from '../../shared/api/apiClient'
@@ -14,6 +15,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (expirationTimer.current) clearTimeout(expirationTimer.current)
     expirationTimer.current = null
     setAccessToken(null)
+    setWatchlistAccount(null)
     setUser(null)
   }, [])
 
@@ -25,6 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (expirationTimer.current) clearTimeout(expirationTimer.current)
     setAccessToken(result.accessToken, result.tokenType)
     setUser(result.user)
+    setWatchlistAccount(result.user.id)
 
     const scheduleExpiration = () => {
       const remaining = expiresAt - Date.now()

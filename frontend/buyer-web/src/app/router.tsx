@@ -1,3 +1,5 @@
+import { CheckoutPage } from '../features/CheckoutPage'
+import { PurchaseHistoryPage, NotificationsPage } from '../features/PurchaseHistoryPage'
 import { createBrowserRouter } from 'react-router-dom'
 import { LoginPage } from '../features/authentication/LoginPage'
 import { ProtectedRoute } from '../features/authentication/ProtectedRoute'
@@ -26,14 +28,15 @@ export const router = createBrowserRouter([
       { path: 'watchlist', element: <WatchlistPage /> },
       { path: 'deals', element: <BuyerInfoPage kind="deals" /> },
       { path: 'help', element: <BuyerInfoPage /> },
-      { path: 'notifications', element: <BuyerInfoPage kind="notifications" /> },
+
       {
         element: <ProtectedRoute />,
         children: [
+          { path: 'notifications', element: <NotificationsPage /> },
           { path: 'cart', element: <CartPage /> },
           { path: 'addresses', element: <AddressesPage /> },
-          { path: 'checkout', element: <AddressesPage checkout /> },
-          { path: 'orders', element: <BuyerInfoPage kind="orders" /> },
+          { path: 'checkout', element: <CheckoutPage /> },
+          { path: 'orders', element: <PurchaseHistoryPage /> },
           { path: 'profile', element: <ProfilePage /> },
         ],
       },

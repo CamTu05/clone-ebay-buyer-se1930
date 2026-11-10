@@ -9,8 +9,7 @@ public sealed class ProductCatalogService(IProductCatalogRepository repository, 
         ProductListRequest request,
         CancellationToken cancellationToken = default)
     {
-        var result = await repository.GetAvailableProductsAsync(
-            request.Page, request.PageSize, clock.UtcNow, cancellationToken);
+        var result = await repository.SearchAsync(request, clock.UtcNow, cancellationToken);
 
         return new ProductPageResponse(
             result.Items,

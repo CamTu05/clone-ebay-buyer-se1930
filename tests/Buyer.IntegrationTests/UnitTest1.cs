@@ -25,13 +25,19 @@ public sealed class HealthEndpointTests : IClassFixture<WebApplicationFactory<Pr
 
     [Theory]
     [InlineData("/health/live")]
-    [InlineData("/health/ready")]
+
     [InlineData("/api/system/status")]
     public async Task EndpointReturnsSuccessAsync(string endpoint)
     {
         var response = await _client.GetAsync(endpoint);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task ReadinessIsUnavailableWithoutDatabase()
+    {
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, (await _client.GetAsync("/health/ready")).StatusCode);
     }
 
     [Fact]

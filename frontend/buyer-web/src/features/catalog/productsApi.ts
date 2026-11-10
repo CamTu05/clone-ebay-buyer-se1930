@@ -3,6 +3,8 @@ import { apiClient } from '../../shared/api/apiClient'
 
 export interface ProductImage { id: number; url: string; isPrimary: boolean }
 export interface ProductListing {
+  auctionId?: number | null
+  condition?: string | null
   listingId: number
   listingType: string
   price: number | null

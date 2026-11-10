@@ -19,7 +19,7 @@ public sealed class ProductRepository(CloneEbayDbContext db) : IProductRepositor
                     .Select(l => new ProductListingResponse(l.id, l.listingType,
                         l.listingType == "AUCTION" ? (l.Auction == null ? null : l.Auction.currentPrice) : l.price,
                         new SellerResponse(l.seller.id, l.seller.username, l.seller.avatarURL,
-                            l.seller.Store == null ? null : l.seller.Store.storeName))).ToList()))
+                            l.seller.Store == null ? null : l.seller.Store.storeName), null, null)).ToList()))
             .SingleOrDefaultAsync(cancellationToken);
     }
 

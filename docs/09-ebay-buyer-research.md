@@ -142,3 +142,7 @@ Sau khi chọn lại cửa sổ Brave, đã đọc được tab sản phẩm m�
 Frontend đã thay trang chủ, header/footer, catalog/detail, login, cart, profile và address/checkout; thêm Watchlist lưu theo thiết bị và các trang trợ giúp/trạng thái chưa hỗ trợ. Ảnh WebP và logo trong public/images/ebay được lấy từ bản lưu trang công khai bằng Brave; chỉ tái sử dụng tài nguyên ảnh, không đưa script của trang gốc vào ứng dụng.
 
 Kiểm tra: npm run build và npm run lint thành công. Backend/database không thay đổi trong lần thiết kế lại này. Chưa kiểm thử end-to-end tài khoản thật; checkout vẫn chỉ chọn địa chỉ. Tìm kiếm/lọc/sắp xếp áp dụng trên trang catalog hiện tại, không phải toàn bộ dữ liệu. Đăng ký, thêm giỏ, mua ngay, bid, thanh toán, lịch sử đơn và thông báo cần API bổ sung.
+
+## Cập nhật backend sau khảo sát
+
+Các giới hạn backend ghi ở phần khảo sát phía trên là hiện trạng trước triển khai. Xem [Backend Buyer đã triển khai](10-buyer-backend-implementation.md) để biết API mới, mapping CloneEbayBuyer, các luồng FE đã nối DB, kết quả kiểm thử và giới hạn còn lại.

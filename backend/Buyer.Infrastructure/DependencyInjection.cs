@@ -63,6 +63,18 @@ public static class DependencyInjection
         services.AddScoped<IProfileService, ProfileService>();
         services.AddScoped<ICartService, CartService>();
 
+        if (configuration.GetValue<string>("BuyerSchema") == "V3" && !string.IsNullOrWhiteSpace(connectionString))
+        {
+            services.AddDbContext<BuyerSchema.BuyerSchemaContext>(options => options.UseSqlServer(connectionString));
+            services.AddScoped<IUserRepository, BuyerSchema.UserRepository>();
+            services.AddScoped<IProductRepository, BuyerSchema.ProductRepository>();
+            services.AddScoped<IProductCatalogRepository, BuyerSchema.ProductCatalogRepository>();
+            services.AddScoped<ICartRepository, BuyerSchema.CartRepository>();
+            services.AddScoped<IAddressRepository, BuyerSchema.AddressRepository>();
+            services.AddScoped<IProfileRepository, BuyerSchema.ProfileRepository>();
+            services.AddScoped<BuyerSchema.BuyerWorkflowService>();
+        }
+
         return services;
     }
 }

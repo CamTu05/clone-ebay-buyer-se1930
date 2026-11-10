@@ -13,9 +13,9 @@ function isProduct(value: unknown): value is ProductSummary {
     && (product.listingType === 'FIXED_PRICE' || product.listingType === 'AUCTION')
 }
 
-export async function getProducts(page: number, pageSize: number, signal: AbortSignal): Promise<ProductPage> {
+export async function getProducts(page: number, pageSize: number, signal: AbortSignal, filters = ""): Promise<ProductPage> {
   const response = await apiClient.get<CatalogEnvelope<ProductPage>>('/api/products', {
-    params: { page, pageSize },
+    params: { ...Object.fromEntries(new URLSearchParams(filters)), page, pageSize },
     signal,
   })
   const envelope = response.data
@@ -37,3 +37,4 @@ export function getCatalogErrorMessage(error: unknown): string {
   if (error.response.status === 400) return 'Unable to load this page of products. Please try again.'
   return 'Products are temporarily unavailable. Please try again.'
 }
+

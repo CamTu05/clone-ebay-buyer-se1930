@@ -53,7 +53,8 @@ export function CatalogPage() {
   const sort = searchParams.get('sort') ?? 'default'
   const [view, setView] = useState<'list' | 'grid'>('list')
   const [retry, setRetry] = useState(0)
-  const requestKey = `${page}:${pageSize}:${retry}`
+  const filters = searchParams.toString()
+  const requestKey = `${page}:${pageSize}:${retry}:${filters}`
   const [state, setState] = useState<CatalogState>({ requestKey, status: 'loading' })
   const current = state.requestKey === requestKey ? state : { requestKey, status: 'loading' as const }
   const watchlist = useWatchlist()
@@ -68,11 +69,11 @@ export function CatalogPage() {
   }, [page, pageSize, searchParams, setSearchParams])
   useEffect(() => {
     const controller = new AbortController()
-    getProducts(page, pageSize, controller.signal)
+    getProducts(page, pageSize, controller.signal, filters)
       .then(data => { if (!controller.signal.aborted) setState({ requestKey, status: 'success', data }) })
       .catch((error: unknown) => { if (!controller.signal.aborted) setState({ requestKey, status: 'error', message: getCatalogErrorMessage(error) }) })
     return () => controller.abort()
-  }, [page, pageSize, requestKey])
+  }, [page, pageSize, requestKey, filters])
 
   function changePage(nextPage: number, nextPageSize = pageSize) {
     const next = new URLSearchParams(searchParams)
@@ -82,12 +83,12 @@ export function CatalogPage() {
     const next = new URLSearchParams(searchParams)
     if (value) next.set(key, value)
     else next.delete(key)
-    setSearchParams(next)
+    next.set('page', '1'); setSearchParams(next)
   }
   function clearFilters() {
     const next = new URLSearchParams(searchParams)
     for (const key of ['q', 'category', 'type', 'min', 'max', 'sort']) next.delete(key)
-    setSearchParams(next)
+    next.set('page', '1'); setSearchParams(next)
   }
   function applyPrice(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -98,15 +99,10 @@ export function CatalogPage() {
       if (readPrice(value) !== undefined) next.set(key, value)
       else next.delete(key)
     }
-    setSearchParams(next)
+    next.set('page', '1'); setSearchParams(next)
   }
-  const filtered = current.status === 'success' ? current.data.items.filter(product =>
-    (!query || query.toLocaleLowerCase().split(/\s+/).every(word => product.name.toLocaleLowerCase().includes(word)))
-    && (!listingType || product.listingType === listingType)
-    && (minimum === undefined || product.price >= minimum)
-    && (maximum === undefined || product.price <= maximum),
-  ).sort((a, b) => sort === 'price-low' ? a.price - b.price : sort === 'price-high' ? b.price - a.price : sort === 'name' ? a.name.localeCompare(b.name) : 0) : []
-  const hasFilters = Boolean(query || listingType || minimum !== undefined || maximum !== undefined)
+  const filtered = current.status === 'success' ? current.data.items : []
+  const hasFilters = Boolean(query || category || listingType || minimum !== undefined || maximum !== undefined)
   const pageSizes = [...new Set([20, 50, 100, pageSize])].sort((a, b) => a - b)
   const totalPages = current.status === 'success' ? current.data.totalPages : 0
   const pageNumbers = Array.from({ length: Math.min(5, totalPages) }, (_, index) => Math.max(1, Math.min(page - 2, totalPages - 4)) + index)
@@ -119,13 +115,13 @@ export function CatalogPage() {
         <div className="eb-filter-section"><h2>Shipping to</h2><Link className="eb-shipping-link" to="/addresses">Vietnam <span aria-hidden="true">⌄</span></Link></div>
         <fieldset className="eb-filter-section"><legend>Buying Format</legend>{buyingOptions.map(([value, name]) => <label className="eb-filter-option" key={value}><input type="radio" name="buying-format" checked={listingType === value} onChange={() => setFilter('type', value)} />{name}</label>)}</fieldset>
         <div className="eb-filter-section"><h2>Price</h2><form key={`${minimum}:${maximum}`} onSubmit={applyPrice}><div className="eb-price-inputs"><label><span className="sr-only">Minimum price in VND</span><input type="number" name="min" min="0" step="any" placeholder="Min ₫" defaultValue={minimum} /></label><span>to</span><label><span className="sr-only">Maximum price in VND</span><input type="number" name="max" min="0" step="any" placeholder="Max ₫" defaultValue={maximum} /></label></div><button className="eb-outline-button eb-price-apply" type="submit">Apply price</button></form></div>
-        <p className="eb-filter-scope">Search, filters and sorting apply to the products on this page.</p>{hasFilters && <button className="eb-text-button" type="button" onClick={clearFilters}>Clear all filters</button>}
+        <p className="eb-filter-scope">Search, filters and sorting use the entire catalog.</p>{hasFilters && <button className="eb-text-button" type="button" onClick={clearFilters}>Clear all filters</button>}
       </aside>
-      <div className="eb-catalog-results">
-        <div className="eb-results-heading"><div><h1 id="catalog-title">{query ? `Results for “${query}”` : category || 'All listings'}</h1>{current.status === 'success' && <p>{hasFilters ? `${filtered.length} matching items on this page` : `${current.data.totalItems.toLocaleString()} results`}</p>}</div><Link className="eb-saved-link" to="/watchlist"><HeartIcon />Your Watchlist</Link></div>
-        <div className="eb-results-toolbar"><div className="eb-buying-tabs" aria-label="Buying format">{buyingOptions.map(([value, label]) => <button key={value} className={listingType === value ? 'is-active' : ''} aria-pressed={listingType === value} type="button" onClick={() => setFilter('type', value)}>{value ? label : 'All'}</button>)}</div><div className="eb-result-view"><label><span className="sr-only">Sort products on this page</span><select value={sort} onChange={event => setFilter('sort', event.target.value)}><option value="default">Default order</option><option value="price-low">Price: lowest first</option><option value="price-high">Price: highest first</option><option value="name">Name: A to Z</option></select></label><button type="button" className="eb-view-button" aria-label={view === 'list' ? 'Show grid view' : 'Show list view'} onClick={() => setView(view === 'list' ? 'grid' : 'list')}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">{view === 'list' ? <><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></> : <><path d="M9 5h12M9 12h12M9 19h12" /><path d="M3 5h2M3 12h2M3 19h2" /></>}</svg></button></div></div>
+      <div className="eb-catalog-results">{watchlist.error && <p role="alert">{watchlist.error}</p>}
+        <div className="eb-results-heading"><div><h1 id="catalog-title">{query ? `Results for “${query}”` : category || 'All listings'}</h1>{current.status === 'success' && <p>{hasFilters ? `${current.data.totalItems} matching items` : `${current.data.totalItems.toLocaleString()} results`}</p>}</div><Link className="eb-saved-link" to="/watchlist"><HeartIcon />Your Watchlist</Link></div>
+        <div className="eb-results-toolbar"><div className="eb-buying-tabs" aria-label="Buying format">{buyingOptions.map(([value, label]) => <button key={value} className={listingType === value ? 'is-active' : ''} aria-pressed={listingType === value} type="button" onClick={() => setFilter('type', value)}>{value ? label : 'All'}</button>)}</div><div className="eb-result-view"><label><span className="sr-only">Sort products</span><select value={sort} onChange={event => setFilter('sort', event.target.value)}><option value="default">Default order</option><option value="price-low">Price: lowest first</option><option value="price-high">Price: highest first</option><option value="name">Name: A to Z</option></select></label><button type="button" className="eb-view-button" aria-label={view === 'list' ? 'Show grid view' : 'Show list view'} onClick={() => setView(view === 'list' ? 'grid' : 'list')}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">{view === 'list' ? <><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></> : <><path d="M9 5h12M9 12h12M9 19h12" /><path d="M3 5h2M3 12h2M3 19h2" /></>}</svg></button></div></div>
         <div className="eb-result-meta"><span>{current.status === 'success' && current.data.items.length > 0 ? `Items ${(page - 1) * pageSize + 1}–${(page - 1) * pageSize + current.data.items.length} of ${current.data.totalItems}` : 'Find something you’ll love'}</span><label>Items per page <select id="catalog-page-size" value={pageSize} onChange={event => changePage(1, Number(event.target.value))}>{pageSizes.map(size => <option key={size} value={size}>{size}</option>)}</select></label></div>
-        {(hasFilters || sort !== 'default') && <div className="eb-active-filters"><span>Filtering this page</span>{query && <button type="button" onClick={() => setFilter('q', '')}>{query} <span aria-hidden="true">×</span><span className="sr-only">Remove search</span></button>}{minimum !== undefined && <button type="button" onClick={() => setFilter('min', '')}>From {priceFormatter.format(minimum)} ×</button>}{maximum !== undefined && <button type="button" onClick={() => setFilter('max', '')}>Up to {priceFormatter.format(maximum)} ×</button>}<button className="eb-clear-filter" type="button" onClick={clearFilters}>Clear filters</button></div>}
+        {(hasFilters || sort !== 'default') && <div className="eb-active-filters"><span>Active filters</span>{query && <button type="button" onClick={() => setFilter('q', '')}>{query} <span aria-hidden="true">×</span><span className="sr-only">Remove search</span></button>}{minimum !== undefined && <button type="button" onClick={() => setFilter('min', '')}>From {priceFormatter.format(minimum)} ×</button>}{maximum !== undefined && <button type="button" onClick={() => setFilter('max', '')}>Up to {priceFormatter.format(maximum)} ×</button>}<button className="eb-clear-filter" type="button" onClick={clearFilters}>Clear filters</button></div>}
         <div aria-live="polite" aria-busy={current.status === 'loading'}>
           {current.status === 'loading' && <div className="eb-catalog-state" role="status"><Loading message="Finding your next favorite…" /></div>}
           {current.status === 'error' && <div className="eb-catalog-state" role="alert"><h2>We couldn’t load these items</h2><ErrorMessage message={current.message} /><button className="eb-blue-button" type="button" onClick={() => setRetry(value => value + 1)}>Try again</button></div>}
@@ -139,3 +135,4 @@ export function CatalogPage() {
     </div>
   </section>
 }
+

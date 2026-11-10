@@ -13,6 +13,20 @@ public sealed class GlobalExceptionHandler(
         CancellationToken cancellationToken)
     {
         logger.LogError(exception, "An unhandled exception occurred");
+        if (exception is Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException
+            || exception is Microsoft.Data.SqlClient.SqlException { Number: 1205 or 2601 or 2627 }
+            || exception is Microsoft.EntityFrameworkCore.DbUpdateException { InnerException: Microsoft.Data.SqlClient.SqlException { Number: 1205 or 2601 or 2627 } })
+        {
+            httpContext.Response.StatusCode = 409;
+            await httpContext.Response.WriteAsJsonAsync(ApiEnvelope<object>.Failure("CONCURRENT_CHANGE", "Data changed concurrently. Refresh and retry."), cancellationToken);
+            return true;
+        }
+        if (exception is Buyer.Application.BuyerRuleException rule)
+        {
+            httpContext.Response.StatusCode = rule.Status;
+            await httpContext.Response.WriteAsJsonAsync(ApiEnvelope<object>.Failure(rule.Code, rule.Message), cancellationToken);
+            return true;
+        }
         if (httpContext.Request.Path.StartsWithSegments("/api/products")
             && exception is CatalogUnavailableException)
         {
