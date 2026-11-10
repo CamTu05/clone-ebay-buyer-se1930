@@ -1,0 +1,23 @@
+using System;
+using System.Collections.Generic;
+
+namespace Buyer.Infrastructure.BuyerSchema.Models;
+
+public partial class CartItem
+{
+    public int id { get; set; }
+
+    public int cartId { get; set; }
+
+    public int listingId { get; set; }
+
+    public int quantity { get; set; }
+
+    public string status { get; set; } = null!;
+
+    public DateTime addedAt { get; set; }
+
+    public virtual Cart cart { get; set; } = null!;
+
+    public virtual Listing listing { get; set; } = null!;
+}

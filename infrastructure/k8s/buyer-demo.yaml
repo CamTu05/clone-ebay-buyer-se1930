@@ -1,0 +1,91 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: buyer-api
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels: {app: buyer-api}
+  template:
+    metadata:
+      labels: {app: buyer-api}
+    spec:
+      terminationGracePeriodSeconds: 45
+      containers:
+        - name: api
+          image: buyer-api:demo
+          ports: [{containerPort: 8080}]
+          env:
+            - {name: ASPNETCORE_ENVIRONMENT, value: Production}
+            - {name: BuyerLifecycle__Enabled, value: 'true'}
+            - {name: EmailOutbox__Enabled, value: 'true'}
+            - name: ConnectionStrings__BuyerDatabase
+              valueFrom: {secretKeyRef: {name: buyer-secrets, key: connection-string}}
+            - name: Jwt__SigningKey
+              valueFrom: {secretKeyRef: {name: buyer-secrets, key: jwt-key}}
+          readinessProbe:
+            httpGet: {path: /health/ready, port: 8080}
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: {path: /health/live, port: 8080}
+            initialDelaySeconds: 15
+          startupProbe:
+            httpGet: {path: /health/live, port: 8080}
+            failureThreshold: 30
+            periodSeconds: 2
+          lifecycle:
+            preStop:
+              exec: {command: [sh, -c, 'sleep 10']}
+          resources:
+            requests: {cpu: 100m, memory: 128Mi}
+            limits: {cpu: '1', memory: 512Mi}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: api}
+spec:
+  selector: {app: buyer-api}
+  ports: [{port: 8080, targetPort: 8080}]
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata: {name: buyer-api}
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels: {app: buyer-api}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: buyer-web}
+spec:
+  replicas: 2
+  strategy:
+    rollingUpdate: {maxUnavailable: 0, maxSurge: 1}
+  selector:
+    matchLabels: {app: buyer-web}
+  template:
+    metadata:
+      labels: {app: buyer-web}
+    spec:
+      containers:
+        - name: web
+          image: buyer-web:demo
+          ports: [{containerPort: 80}]
+          readinessProbe:
+            httpGet: {path: /, port: 80}
+          resources:
+            requests: {cpu: 50m, memory: 64Mi}
+            limits: {cpu: 500m, memory: 128Mi}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: buyer-web}
+spec:
+  selector: {app: buyer-web}
+  ports: [{port: 80, targetPort: 80}]

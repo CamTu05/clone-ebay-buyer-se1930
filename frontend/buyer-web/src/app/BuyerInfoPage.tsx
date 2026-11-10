@@ -1,0 +1,20 @@
+import { Link } from 'react-router-dom'
+import { Icon } from '../shared/components/Icon'
+
+export function BuyerInfoPage({ kind = 'help' }: { kind?: 'help' | 'orders' | 'notifications' | 'register' | 'deals' }) {
+  if (kind === 'orders' || kind === 'notifications' || kind === 'register') {
+    const content = {
+      orders: ['Purchase history', 'Purchase history is not available yet', 'Completed orders will appear here when ordering becomes available. You can still browse items and manage your shopping cart.'],
+      notifications: ['Notifications', 'Notifications are not available yet', 'You can check your saved items in Watchlist and manage your account from My eBay.'],
+      register: ['Create an account', 'Registration is not available yet', 'If you already have a buyer account for this project, sign in to manage your profile, cart and shipping addresses.'],
+    }[kind]
+    return <section className="info-page"><p className="breadcrumb"><Link to="/">Home</Link><span>›</span>{content[0]}</p><h1>{content[0]}</h1><div className="empty-state"><Icon name={kind === 'orders' ? 'bag' : kind === 'notifications' ? 'bell' : 'user'} size={54}/><h2>{content[1]}</h2><p>{content[2]}</p><Link className="pill primary" to={kind === 'register' ? '/login' : '/catalog'}>{kind === 'register' ? 'Sign in' : 'Continue shopping'}</Link></div></section>
+  }
+  if (kind === 'deals') return <section className="info-page"><div className="discovery-banner"><p>Explore eBay</p><h1>Great finds. All in one place.</h1><p>Discover something for every interest, style and budget.</p><Link className="pill dark" to="/catalog">Shop all items <Icon name="arrow" size={18}/></Link></div><div className="empty-state"><h2>Looking for your next great find?</h2><p>Special offers are not available in this catalog yet. Browse current listings and compare prices to find your favorite.</p><Link className="text-link" to="/catalog">Browse the catalog →</Link></div></section>
+  return <section className="info-page"><p className="breadcrumb"><Link to="/">Home</Link><span>›</span>Help & Contact</p><div className="help-banner"><h1>How can we help you today?</h1><p>Find your way around the buyer experience.</p></div><div className="help-topics">
+    <Link to="/catalog"><Icon name="search" size={32}/><h2>Buying</h2><p>Browse items, compare prices and explore listing details.</p></Link>
+    <Link to="/cart"><Icon name="cart" size={32}/><h2>Your shopping cart</h2><p>Review quantities and choose a delivery address.</p></Link>
+    <Link to="/profile"><Icon name="user" size={32}/><h2>Your account</h2><p>Update your profile and personal information.</p></Link>
+    <Link to="/addresses"><Icon name="truck" size={32}/><h2>Shipping addresses</h2><p>Add a destination or change your primary address.</p></Link>
+  </div><div className="help-questions"><h2>Buying with confidence</h2><details open><summary>What can I do here?</summary><p>You can browse the catalog, view items, save favorites on this device and sign in to manage an existing cart, profile and shipping addresses.</p></details><details><summary>Can I place an order or a bid?</summary><p>Sign in to add items to your cart, review checkout totals and place orders, or submit a maximum bid on an active auction. PayPal payments are simulated; no real money is charged.</p></details><details><summary>Where are my saved items?</summary><p>Signed-in favorites are saved to your project account. Guest favorites stay in this browser. This project is independent of your eBay account.</p><Link className="text-link" to="/watchlist">Open Watchlist</Link></details><details><summary>Where can I read eBay's buying and returns policies?</summary><p>Visit the official <a href="https://www.ebay.com/help/buying" target="_blank" rel="noreferrer">eBay buying help</a> or <a href="https://www.ebay.com/help/buying/returns-refunds/returning-item?id=4041" target="_blank" rel="noreferrer">returns guidance</a>. These describe eBay's service; this project is a separate implementation.</p></details></div></section>
+}
