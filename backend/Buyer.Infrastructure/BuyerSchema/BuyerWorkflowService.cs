@@ -4,7 +4,7 @@ using Buyer.Infrastructure.BuyerSchema.Models;
 using Microsoft.EntityFrameworkCore;
 namespace Buyer.Infrastructure.BuyerSchema;
 
-public sealed record CheckoutRequest(int AddressId, string Method, string? CouponCode, Dictionary<int, int>? ShippingOptions);
+public sealed record CheckoutRequest(int AddressId, string Method, string? CouponCode, Dictionary<int, int>? ShippingOptions, int? ListingId = null, int Quantity = 1);
 public sealed class BuyerWorkflowService(BuyerSchemaContext db)
 {
     static BuyerRuleException Fail(string code, string message, int status = 409) => new(code, message, status);
@@ -54,10 +54,21 @@ public sealed class BuyerWorkflowService(BuyerSchemaContext db)
         await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct); await RequireBuyer(uid, ct);
         var user = await db.Users.SingleAsync(x => x.id == uid, ct);
         var address = await db.Addresses.SingleOrDefaultAsync(x => x.id == r.AddressId && x.userId == uid, ct) ?? throw Fail("ADDRESS_NOT_FOUND", "Shipping address not found.", 404);
-        var items = await db.CartItems.Include(x => x.listing).ThenInclude(x => x.seller).Include(x => x.listing).ThenInclude(x => x.ListingImages).Where(x => x.cart.userId == uid && x.status == "ACTIVE").OrderBy(x => x.listingId).ToListAsync(ct);
+        if (r.ListingId.HasValue && (r.ListingId <= 0 || r.Quantity < 1 || r.Quantity > 1000))
+            throw Fail("BUY_NOW_INVALID", "Choose a valid listing and quantity between 1 and 1000.", 400);
+        List<CartItem> items;
+        if (r.ListingId.HasValue)
+        {
+            var listing = await db.Listings.Include(x => x.seller).Include(x => x.ListingImages)
+                .SingleOrDefaultAsync(x => x.id == r.ListingId.Value, ct)
+                ?? throw Fail("LISTING_NOT_FOUND", "Listing not found.", 404);
+            // A checkout selection only: never attach this item to the buyer's cart.
+            items = [new CartItem { listingId = listing.id, listing = listing, quantity = r.Quantity }];
+        }
+        else items = await db.CartItems.Include(x => x.listing).ThenInclude(x => x.seller).Include(x => x.listing).ThenInclude(x => x.ListingImages).Where(x => x.cart.userId == uid && x.status == "ACTIVE").OrderBy(x => x.listingId).ToListAsync(ct);
         if (items.Count == 0) throw Fail("CART_EMPTY", "Your cart is empty.");
         var now = DateTime.UtcNow;
-        foreach (var item in items) { var l = item.listing; if (l.status != "ACTIVE" || l.listingType != "FIXED_PRICE" || l.price == null || l.quantity < item.quantity || l.seller.accountStatus != "ACTIVE" || l.sellerId == uid || l.publishedAt > now || l.endedAt <= now) throw Fail("CART_UNAVAILABLE", "An item is unavailable. Review your cart."); }
+        foreach (var item in items) { var l = item.listing; if (l.status != "ACTIVE" || l.listingType != "FIXED_PRICE" || l.price == null || l.quantity < item.quantity || l.seller.accountStatus != "ACTIVE" || l.sellerId == uid || l.publishedAt > now || l.endedAt <= now) throw Fail("CART_UNAVAILABLE", "An item is unavailable. Review your selection."); }
         var subtotal = items.Sum(x => x.quantity * x.listing.price!.Value); decimal discount = 0;
         Coupon? coupon = null;
         if (!string.IsNullOrWhiteSpace(r.CouponCode))
@@ -83,7 +94,7 @@ public sealed class BuyerWorkflowService(BuyerSchemaContext db)
             orders.Add(order);
         }
         var shipping = orders.Sum(x => x.shippingFee);
-        if (preview) return new { subtotal, discountAmount = discount, shippingFee = shipping, totalAmount = subtotal - discount + shipping, currency = "VND", sellers = orders.Select(x => new { x.sellerId, x.shippingOptionId, x.shippingServiceName, x.totalAmount }) };
+        if (preview) return new { subtotal, discountAmount = discount, shippingFee = shipping, totalAmount = subtotal - discount + shipping, currency = "VND", items = orders.SelectMany(x => x.OrderItems).Select(x => new { x.listingId, x.productTitle, x.quantity, x.unitPrice }), sellers = orders.Select(x => new { x.sellerId, x.shippingOptionId, x.shippingServiceName, x.totalAmount }) };
         foreach (var item in items)
         {
             var updated = await db.Listings.Where(x => x.id == item.listingId && x.status == "ACTIVE" && x.quantity >= item.quantity).ExecuteUpdateAsync(s => s.SetProperty(x => x.quantity, x => x.quantity - item.quantity), ct);
@@ -95,7 +106,8 @@ public sealed class BuyerWorkflowService(BuyerSchemaContext db)
             group.Payments.Add(new Payment { amount = group.totalAmount, method = "COD", status = "PENDING", provider = "COD" });
             if (coupon != null) { coupon.usageCount++; group.CouponUsage = new CouponUsage { couponId = coupon.id, userId = uid, discountAmount = discount }; }
         }
-        db.CheckoutGroups.Add(group); db.CartItems.RemoveRange(items);
+        db.CheckoutGroups.Add(group);
+        if (!r.ListingId.HasValue) db.CartItems.RemoveRange(items);
         db.Notifications.Add(new Notification { userId = uid, type = "ORDER_CREATED", title = "Order created", content = "Your checkout has been created." });
         await db.SaveChangesAsync(ct); await tx.CommitAsync(ct);
         return new { checkoutGroupId = group.id, group.totalAmount, group.currency, group.status, group.paymentDeadline, orderIds = orders.Select(x => x.id) };

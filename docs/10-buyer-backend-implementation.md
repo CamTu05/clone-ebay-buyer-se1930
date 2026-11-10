@@ -76,3 +76,8 @@ Không coi build/API tests là kiểm chứng giao diện trình duyệt hoặc 
 - Danh mục sidebar đã đọc GET /api/categories từ DB; timeout FE tăng lên 20 giây cho giao dịch có chờ khóa SQL.
 
 - Kiểm tra bản chạy thật phát hiện User Secrets ghi đè ConnectionStrings:BuyerDatabase sang CloneEbayDB_V2. Đã xóa riêng key ghi đè cũ bằng dotnet user-secrets remove; giữ JWT secret. Đây là nguyên nhân chỉ sửa appsettings trước đó vẫn kết nối sai DB.
+
+### Buy It Now
+
+Nút Buy It Now ở listing FIXED_PRICE mở /checkout?listingId=...&quantity=1; nếu chưa đăng nhập sẽ quay lại checkout sau đăng nhập. POST /api/checkout/preview và /api/checkout nhận thêm listingId (tùy chọn), quantity (1–1000). Khi có listingId, backend chỉ mua listing đó, không thêm/xóa giỏ. Khi thiếu listingId, giữ nguyên luồng checkout giỏ. Preview không tạo đơn/giữ tồn kho; Place order mới tạo đơn. COD xác nhận chờ thu tiền, PayPal PENDING đến khi thanh toán mô phỏng. Script scripts/buyer-buy-now-smoke.mjs đã qua 22 assertions trên DB test, gồm bảo toàn giỏ, tồn kho, preview, COD/PayPal và dữ liệu không hợp lệ.
+
