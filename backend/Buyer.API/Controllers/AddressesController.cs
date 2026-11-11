@@ -33,7 +33,7 @@ public sealed class AddressesController(IAddressService service) : ControllerBas
 
     [HttpGet("{addressId}")]
     [ProducesResponseType<ApiEnvelope<AddressResponse>>(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetAsync(string addressId, CancellationToken ct)
+    public async Task<IActionResult> Get(string addressId, CancellationToken ct)
         => Ok(ApiEnvelope<AddressResponse>.Succeeded(await service.SelectForCheckoutAsync(UserId, Id(addressId), ct)));
 
     [HttpPost]
@@ -41,7 +41,7 @@ public sealed class AddressesController(IAddressService service) : ControllerBas
     public async Task<IActionResult> CreateAsync(CreateAddressRequest request, CancellationToken ct)
     {
         var address = await service.CreateAsync(UserId, request, ct);
-        return CreatedAtAction(nameof(GetAsync), new { addressId = address.Id }, ApiEnvelope<AddressResponse>.Succeeded(address));
+        return CreatedAtAction(nameof(Get), new { addressId = address.Id }, ApiEnvelope<AddressResponse>.Succeeded(address));
     }
 
     [HttpPatch("{addressId}")]

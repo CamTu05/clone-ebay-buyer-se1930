@@ -8,4 +8,6 @@ public sealed record ProfileUserSnapshot(
     string? AvatarUrl,
     bool EmailVerified,
     string Role,
-    string AccountStatus);
+    string AccountStatus,
+    DateTime? LastUsernameChangedAtUtc = null,
+    bool PhoneVerified = false);

@@ -93,7 +93,7 @@ public sealed class ProfileController(
             ProfileFailure.ValidationFailed => StatusCodes.Status400BadRequest,
             ProfileFailure.UserNotFound => StatusCodes.Status404NotFound,
              ProfileFailure.AccountUnavailable => StatusCodes.Status403Forbidden,
-             ProfileFailure.UsernameTaken or
+             ProfileFailure.UsernameTaken or ProfileFailure.UsernameChangeRestricted or
              ProfileFailure.ConcurrentConflict => StatusCodes.Status409Conflict,
             _ => StatusCodes.Status400BadRequest
         };
@@ -105,6 +105,7 @@ public sealed class ProfileController(
                  ProfileFailure.ValidationFailed => "Validation failed",
                  ProfileFailure.UsernameTaken => "Username is unavailable",
                 ProfileFailure.ConcurrentConflict => "Profile changed concurrently",
+                ProfileFailure.UsernameChangeRestricted => "Username can only be changed once every 30 days",
                 _ => "Profile request failed"
             },
             null,

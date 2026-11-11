@@ -8,6 +8,7 @@ export interface BuyerProfile {
   phoneNumber: string | null
   avatarUrl: string | null
   emailVerified: boolean
+  phoneVerified: boolean
 }
 
 // Only editable fields supported by PATCH /api/me.

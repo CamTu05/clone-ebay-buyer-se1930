@@ -33,7 +33,7 @@ public sealed class ProfileRepository(
             .Select(user => new ProfileUserSnapshot(
                 user.id, user.username, user.email, user.phoneNumber,
                 user.avatarURL, user.emailVerified,
-                user.role, user.accountStatus))
+                user.role, user.accountStatus, null, false))
             .SingleOrDefaultAsync(cancellationToken);
     }
 

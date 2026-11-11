@@ -7,4 +7,4 @@ public sealed record AuthenticatedUser(
     string Username,
     string Email,
     string Role,
-    bool EmailVerified);
+    bool EmailVerified, bool PhoneVerified = false);

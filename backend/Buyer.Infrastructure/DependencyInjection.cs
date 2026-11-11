@@ -1,10 +1,11 @@
 using Buyer.Application.Interfaces.Addresses;
-using Buyer.Application.Interfaces.ListingCatalog;
+using Buyer.Application.Catalog;
 using Buyer.Application.Interfaces.Authentication;
 using Buyer.Application.Interfaces.Profile;
 using Buyer.Application.Interfaces.Cart;
 using Buyer.Infrastructure.Authentication;
-using Buyer.Infrastructure.Repositories.ListingCatalog;
+using Buyer.Infrastructure.Catalog;
+using Buyer.Infrastructure.Data;
 using Buyer.Infrastructure.Repositories.Addresses;
 using Buyer.Infrastructure.Data.Models;
 using Buyer.Infrastructure.Repositories.Profile;
@@ -31,16 +32,18 @@ public static class DependencyInjection
         if (!string.IsNullOrWhiteSpace(connectionString))
         {
             services.AddDbContext<CloneEbayDbContext>(options => options.UseSqlServer(connectionString));
-            services.AddScoped<IListingCatalogRepository, ListingCatalogRepository>();
+            services.AddScoped<IProductRepository, ProductRepository>();
+            services.AddScoped<IProductCatalogRepository, ProductCatalogRepository>();
             services.AddScoped<ICartRepository, CartRepository>();
             services.AddScoped<IAddressRepository, AddressRepository>();
         }
         else
         {
+            services.AddScoped<IProductRepository, UnavailableProductRepository>();
+            services.AddScoped<IProductCatalogRepository, UnavailableProductRepository>();
             services.AddScoped<IAddressRepository, UnavailableAddressRepository>();
         }
 
-        services.AddScoped<IAddressService, AddressService>();
         services.AddOptions<JwtOptions>()
             .Bind(configuration.GetSection(JwtOptions.SectionName))
             .Validate(options => !string.IsNullOrWhiteSpace(options.Issuer), "Jwt:Issuer is required")
@@ -54,19 +57,32 @@ public static class DependencyInjection
         services.AddScoped<IPasswordVerifier, PasswordVerifier>();
         services.AddScoped<IAccessTokenGenerator, JwtAccessTokenGenerator>();
         services.AddScoped<IAuthService, AuthService>();
-        services.AddScoped<IListingCatalogService, ListingCatalogService>();
+        services.AddScoped<IProductCatalogService, ProductCatalogService>();
 
         //PROFILE - EBAY-20
         services.AddScoped<IProfileRepository, ProfileRepository>();
         services.AddScoped<IProfileService, ProfileService>();
         services.AddScoped<ICartService, CartService>();
 
-        // EMAIL VERIFICATION
-        services.Configure<Buyer.Infrastructure.Email.SmtpOptions>(
-            configuration.GetSection(Buyer.Infrastructure.Email.SmtpOptions.SectionName));
-        services.AddScoped<Buyer.Application.Interfaces.Email.IEmailSender, Buyer.Infrastructure.Email.SmtpEmailSender>();
-        services.AddScoped<Buyer.Application.Interfaces.Email.IEmailVerificationService, Buyer.Infrastructure.Email.EmailVerificationService>();
+        if (configuration.GetValue<string>("BuyerSchema") == "V3" && !string.IsNullOrWhiteSpace(connectionString))
+        {
+            services.AddDbContext<BuyerSchema.BuyerSchemaContext>(options => options.UseSqlServer(connectionString));
+            services.AddScoped<IUserRepository, BuyerSchema.UserRepository>();
+            services.AddScoped<IProductRepository, BuyerSchema.ProductRepository>();
+            services.AddScoped<IProductCatalogRepository, BuyerSchema.ProductCatalogRepository>();
+            services.AddScoped<ICartRepository, BuyerSchema.CartRepository>();
+            services.AddScoped<IAddressRepository, BuyerSchema.AddressRepository>();
+            services.AddScoped<IProfileRepository, BuyerSchema.ProfileRepository>();
+            services.AddScoped<BuyerSchema.BuyerWorkflowService>();
+            services.AddScoped<BuyerSchema.AccountLifecycleService>();
+        }
 
+        services.AddScoped<IAddressService, AddressService>();
+        services.AddScoped<IListingCatalogRepository, Buyer.Infrastructure.Repositories.ListingCatalog.ListingCatalogRepository>();
+        services.AddScoped<IListingCatalogService, ListingCatalogService>();
+        services.Configure<Email.SmtpOptions>(configuration.GetSection(Email.SmtpOptions.SectionName));
+        services.AddScoped<IEmailSender, Email.SmtpEmailSender>();
+        services.AddScoped<IEmailVerificationService, Email.EmailVerificationService>();
         return services;
     }
 }

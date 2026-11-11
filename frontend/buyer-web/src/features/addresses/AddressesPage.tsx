@@ -4,6 +4,8 @@ import { useAuth } from '../authentication/useAuth'
 import { AddressForm } from './AddressForm'
 import { addressError, deleteAddress, loadAddresses, loadCountries, makeDefault, resolveAddress, saveAddress } from './addressesApi'
 import type { AddressInput, Country, ShippingAddress } from './addressesApi'
+import { AccountNavigation } from '../profile/AccountNavigation'
+import '../account.css'
 
 export function AddressesPage({ checkout = false }: { checkout?: boolean }) {
   const { user } = useAuth()
@@ -11,13 +13,13 @@ export function AddressesPage({ checkout = false }: { checkout?: boolean }) {
 }
 
 export function AddressText({ address }: { address: ShippingAddress }) {
-  return <div className="space-y-1 break-words text-slate-700">
-    <p className="font-semibold text-slate-900">{address.fullName}</p>
+  return <address className="space-y-1 break-words not-italic">
+    <p className="font-semibold">{address.fullName}</p>
     <p>{address.street}</p>
     {address.addressLine2 && <p>{address.addressLine2}</p>}
     <p>{[address.city, address.state, address.postalCode].filter(Boolean).join(', ')}</p>
     <p>{address.country}</p><p>{address.phone}</p>
-  </div>
+  </address>
 }
 
 function AddressWorkspace({ checkout }: { checkout: boolean }) {
@@ -77,31 +79,35 @@ function AddressWorkspace({ checkout }: { checkout: boolean }) {
     finally { setBusy(false) }
   }
 
-  const button = 'rounded-full border border-slate-400 px-4 py-2 text-sm font-semibold disabled:opacity-50'
-  return <section className="mx-auto max-w-4xl space-y-6">
-    <div className="flex flex-wrap items-start justify-between gap-4">
-      <div><p className="mb-2 text-sm text-slate-600">{checkout ? 'Checkout · Delivery address' : 'My account'}</p>
-        <h1 className="text-3xl font-bold">{checkout ? 'Ship to' : 'Shipping addresses'}</h1>
-        <p className="mt-2 text-slate-600">{checkout ? 'Your primary address is selected initially. Choose another destination for this purchase without changing your primary address.' : 'Save delivery addresses and choose your primary shipping address.'}</p>
+  const button = 'buyer-pill secondary'
+  const workspace = <section className={`buyer-addresses space-y-6 ${checkout ? 'mx-auto max-w-5xl' : ''}`}>
+    {checkout && <>
+      <h1 className="checkout-heading">Checkout</h1>
+      <nav className="checkout-progress" aria-label="Checkout progress"><span className="current" aria-current="step">1. Delivery address</span><span>2. Payment — unavailable</span><span>3. Review — unavailable</span></nav>
+    </>}
+    <div className="account-page-toolbar">
+      <div>
+        <h2 className="account-section-title">{checkout ? 'Ship to' : 'Shipping addresses'}</h2>
+        <p className="account-description">{checkout ? 'Choose where you would like this purchase delivered.' : 'Save your delivery details and choose a primary shipping address.'}</p>
       </div>
-      <Link className="text-blue-700 underline" to={checkout ? '/addresses' : '/checkout'}>{checkout ? 'Manage address book' : 'Choose a delivery address'}</Link>
+      <Link className="account-link-button shrink-0" to={checkout ? '/addresses' : '/checkout'}>{checkout ? 'Manage addresses' : 'Choose a delivery address'}</Link>
     </div>
-    {checkout && <p className="text-sm text-slate-600">Review your delivery address. Order confirmation and payment are not available yet.</p>}
-    <p className="text-sm text-slate-600">Address changes apply to future purchases. They do not change delivery details on existing orders.</p>
+    {checkout && <p className="account-note">Your primary address is selected initially. Choosing a different destination here does not change your primary address. Payment and order placement are not available yet.</p>}
+    {!checkout && <p className="account-note">Address changes apply to future purchases. They do not change delivery details on existing orders.</p>}
     {notice && <p role="status" className="text-green-800">{notice}</p>}
     {error && <p role="alert" className="text-red-700">{error}</p>}
     {!view ? <p role="status">Loading addresses…</p> : view.error ? <div role="alert"><p className="text-red-700">{view.error}</p><button className={button} onClick={() => setRevision(value => value + 1)}>Try again</button></div> : <>
-      {addresses.length === 0 && <p className="rounded-xl border border-slate-200 bg-white p-6">No shipping addresses yet. Add one to choose a delivery destination.</p>}
+      {addresses.length === 0 && <div className="account-panel p-8"><h3 className="mb-2 text-lg font-bold">Add your first shipping address</h3><p className="account-description">Save your address so it's ready when you need it.</p></div>}
       <fieldset disabled={busy || editor !== null || deleting !== null} className="grid gap-4 sm:grid-cols-2">
         <legend className="sr-only">{checkout ? 'Choose shipping address' : 'Saved shipping addresses'}</legend>
-        {addresses.map(address => <article key={address.id} className={`space-y-4 rounded-xl border bg-white p-6 ${checkout && selected?.id === address.id ? 'border-blue-700 ring-1 ring-blue-700' : 'border-slate-200'}`}>
-          {checkout && <label className="flex items-center gap-2 font-semibold"><input type="radio" name="shippingAddress" checked={selected?.id === address.id} onChange={() => { setSelectedId(address.id); setConfirmed(null) }} />Ship to {address.fullName}</label>}
-          {address.isDefault && <p className="text-sm font-semibold text-blue-800">Primary shipping address</p>}
+        {addresses.map(address => <article key={address.id} className={`address-card ${checkout && selected?.id === address.id ? 'selected' : ''}`}>
+          {checkout && <label className="mb-4 flex items-center gap-2 font-semibold"><input type="radio" name="shippingAddress" checked={selected?.id === address.id} onChange={() => { setSelectedId(address.id); setConfirmed(null) }} />Ship to {address.fullName}</label>}
+          {address.isDefault && <p className="address-primary">Primary shipping address</p>}
           <AddressText address={address} />
-          <div className="flex flex-wrap gap-3">
-            <button className={button} onClick={() => { setEditor(address); setError(''); setConfirmed(null) }}>Edit</button>
-            <button className={button} onClick={() => { setDeleting(address); setError(''); setConfirmed(null) }}>Delete</button>
-            {!address.isDefault && <button className={button} onClick={() => void mutate(() => makeDefault(address.id), 'Primary shipping address updated.')}>Make primary</button>}
+          <div className="address-card-actions">
+            <button onClick={() => { setEditor(address); setError(''); setConfirmed(null) }}>Edit</button>
+            <button onClick={() => { setDeleting(address); setError(''); setConfirmed(null) }}>Delete</button>
+            {!address.isDefault && <button onClick={() => void mutate(() => makeDefault(address.id), 'Primary shipping address updated.')}>Make primary</button>}
           </div>
         </article>)}
       </fieldset>
@@ -113,9 +119,10 @@ function AddressWorkspace({ checkout }: { checkout: boolean }) {
       {editor !== null ? <AddressForm key={editor === 'new' ? 'new' : editor.id} address={editor === 'new' ? null : editor} countries={view.countries} busy={busy} onSave={save} onCancel={() => { setEditor(null); setError('') }} />
         : !deleting && <button disabled={busy} className={button} onClick={() => { setEditor('new'); setError(''); setConfirmed(null) }}>Add a new address</button>}
       {checkout && selected && !editor && !deleting && <div className="space-y-3 border-t border-slate-200 pt-6">
-        <button disabled={busy} className="rounded-full bg-blue-700 px-6 py-3 font-semibold text-white disabled:opacity-50" onClick={() => void selectForCheckout()}>{busy ? 'Checking address…' : 'Use this address'}</button>
-        {confirmed && <div role="status" className="space-y-2"><h2 className="font-semibold">Delivery address selected</h2><AddressText address={confirmed} /><p className="text-sm text-slate-600">No order has been placed. Choosing a delivery address does not change your primary address.</p></div>}
+        <button disabled={busy} className="buyer-pill" onClick={() => void selectForCheckout()}>{busy ? 'Checking address…' : 'Use this address'}</button>
+        {confirmed && <div role="status" className="account-panel space-y-3 p-6"><h3 className="font-bold">Delivery address selected</h3><AddressText address={confirmed} /><p className="account-note">Your address is ready. No order has been placed. Payment and order confirmation are not available yet.</p><Link className="account-link-button" to="/cart">Back to your cart</Link></div>}
       </div>}
     </>}
   </section>
+  return checkout ? workspace : <AccountNavigation>{workspace}</AccountNavigation>
 }

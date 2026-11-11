@@ -1,0 +1,21 @@
+using Buyer.Application.Interfaces.Authentication;
+
+namespace Buyer.Application.Catalog;
+
+public sealed class ProductCatalogService(IProductCatalogRepository repository, IClock clock)
+    : IProductCatalogService
+{
+    public async Task<ProductPageResponse> GetProductsAsync(
+        ProductListRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await repository.SearchAsync(request, clock.UtcNow, cancellationToken);
+
+        return new ProductPageResponse(
+            result.Items,
+            request.Page,
+            request.PageSize,
+            result.TotalItems,
+            (int)Math.Ceiling((double)result.TotalItems / request.PageSize));
+    }
+}

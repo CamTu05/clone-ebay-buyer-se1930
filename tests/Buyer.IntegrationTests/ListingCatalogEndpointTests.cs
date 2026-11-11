@@ -152,6 +152,22 @@ public sealed class ListingCatalogEndpointTests
     }
 
     [Fact]
+    public async Task UnavailableCatalogReturns503WithSafeErrorEnvelope()
+    {
+        using var factory = CreateFactory(new StubListingCatalogService { Failure = new CatalogUnavailableException() });
+        using var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/api/listings");
+        var envelope = await response.Content.ReadFromJsonAsync<ApiEnvelope<object>>();
+
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+        Assert.NotNull(envelope);
+        Assert.False(envelope.Success);
+        Assert.Null(envelope.Data);
+        Assert.Equal("CATALOG_UNAVAILABLE", Assert.Single(envelope.Errors!).Code);
+    }
+
+    [Fact]
     public async Task ServiceFailureReturnsGenericErrorWithoutLeakingExceptionDetails()
     {
         var service = new StubListingCatalogService
@@ -181,6 +197,7 @@ public sealed class ListingCatalogEndpointTests
             builder.UseSetting(
                 "ConnectionStrings:BuyerDatabase",
                 "Server=(localdb)\\MSSQLLocalDB;Database=BuyerApiTests;Trusted_Connection=True");
+            builder.UseSetting("BuyerLifecycle:Enabled", "false");
             builder.UseSetting("Jwt:Issuer", "BuyerApi.Tests");
             builder.UseSetting("Jwt:Audience", "BuyerApi.Tests.Client");
             builder.UseSetting("Jwt:SigningKey", "test-only-signing-key-at-least-32-characters");

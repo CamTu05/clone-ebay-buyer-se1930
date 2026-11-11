@@ -33,3 +33,8 @@ coverage/
 *.mdf
 *.ldf
 .tmp-dotnet/
+
+**/test-results/
+**/playwright-report/
+performance-tests/report/
+*.jtl

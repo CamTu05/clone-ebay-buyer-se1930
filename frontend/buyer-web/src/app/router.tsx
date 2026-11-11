@@ -1,14 +1,19 @@
+import { ExternalLoginPage } from '../features/authentication/ExternalLoginPage'
+import { MyAuctionsPage } from '../features/AuctionPages'
+import { AccountFlowPage, DevMailboxPage } from '../features/authentication/AccountFlowPage'
+import { CheckoutPage, GuestOrderPage } from '../features/CheckoutPage'
+import { PurchaseHistoryPage, NotificationsPage } from '../features/PurchaseHistoryPage'
 import { createBrowserRouter } from 'react-router-dom'
 import { LoginPage } from '../features/authentication/LoginPage'
-import { RegisterPage } from '../features/authentication/RegisterPage'
 import { ProtectedRoute } from '../features/authentication/ProtectedRoute'
-import { ListingCatalogPage } from '../features/catalog/ListingCatalogPage'
-import { FeaturePlaceholderPage } from '../shared/components/FeaturePlaceholderPage'
+import { CatalogPage } from '../features/catalog/CatalogPage'
+import { WatchlistPage } from '../features/watchlist/WatchlistPage'
+import { BuyerInfoPage } from './BuyerInfoPage'
 import { AppLayout } from './AppLayout'
 import { HomePage } from './HomePage'
 import { NotFoundPage } from './NotFoundPage'
 
-import { ListingDetailPage } from '../features/catalog/ListingDetailPage'
+import { ProductDetailPage } from '../features/catalog/ProductDetailPage'
 import { ProfilePage } from '../features/profile/ProfilePage'
 import { CartPage } from '../features/cart/CartPage'
 import { AddressesPage } from '../features/addresses/AddressesPage'
@@ -19,17 +24,30 @@ export const router = createBrowserRouter([
     element: <AppLayout />,
     children: [
       { index: true, element: <HomePage /> },
-      { path: 'catalog', element: <ListingCatalogPage /> },
-      { path: 'listings/:listingId', element: <ListingDetailPage /> },
+      { path: 'catalog', element: <CatalogPage /> },
+      { path: 'products/:productId', element: <ProductDetailPage /> },
+      ...(['verify-email','forgot-password','reset-password','resend-verification'] as const).map(mode=>({path:mode,element:<AccountFlowPage key={mode} mode={mode}/>})),
+      ...(import.meta.env.DEV ? [{path:'dev-mailbox',element:<DevMailboxPage/>}] : []),
+      { path: 'external-login', element: <ExternalLoginPage /> },
       { path: 'login', element: <LoginPage /> },
-      { path: 'register', element: <RegisterPage /> },
+      { path: 'register', element: <AccountFlowPage mode="register" /> },
+      { path: 'cart', element: <CartPage /> },
+      { path: 'guest-order/:id', element: <GuestOrderPage /> },
+      { path: 'checkout', element: <CheckoutPage /> },
+      { path: 'watchlist', element: <WatchlistPage /> },
+      { path: 'deals', element: <BuyerInfoPage kind="deals" /> },
+      { path: 'help', element: <BuyerInfoPage /> },
+
       {
         element: <ProtectedRoute />,
         children: [
-          { path: 'cart', element: <CartPage /> },
+          { path: 'notifications', element: <NotificationsPage /> },
+
           { path: 'addresses', element: <AddressesPage /> },
-          { path: 'checkout', element: <AddressesPage checkout /> },
-          { path: 'orders', element: <FeaturePlaceholderPage title="Orders" /> },
+
+          { path: 'bids', element: <MyAuctionsPage /> },
+          { path: 'orders', element: <PurchaseHistoryPage /> },
+          { path: 'change-password', element: <AccountFlowPage mode="change-password" /> },
           { path: 'profile', element: <ProfilePage /> },
         ],
       },
