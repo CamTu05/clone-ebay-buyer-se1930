@@ -100,17 +100,26 @@ public sealed class BuyerWorkflowService(BuyerSchemaContext db, IConfiguration? 
         }
         else if (r.ListingId.HasValue)
         {
-            var listing = await db.Listings.Include(x => x.seller).Include(x => x.ListingImages)
+            var listing = await db.Listings.Include(x => x.seller).Include(x => x.ListingImages).Include(x => x.ListingPromotion)
                 .SingleOrDefaultAsync(x => x.id == r.ListingId.Value, ct)
                 ?? throw Fail("LISTING_NOT_FOUND", "Listing not found.", 404);
             // A checkout selection only: never attach this item to the buyer's cart.
             items = [new CartItem { listingId = listing.id, listing = listing, quantity = r.Quantity }];
         }
-        else items = await db.CartItems.Include(x => x.listing).ThenInclude(x => x.seller).Include(x => x.listing).ThenInclude(x => x.ListingImages).Where(x => x.cart.userId == uid && x.status == "ACTIVE").OrderBy(x => x.listingId).ToListAsync(ct);
+        else items = await db.CartItems.Include(x => x.listing).ThenInclude(x => x.seller).Include(x => x.listing).ThenInclude(x => x.ListingImages).Include(x => x.listing).ThenInclude(x => x.ListingPromotion).Where(x => x.cart.userId == uid && x.status == "ACTIVE").OrderBy(x => x.listingId).ToListAsync(ct);
         if (items.Count == 0) throw Fail("CART_EMPTY", "Your cart is empty.");
         var now = DateTime.UtcNow;
         foreach (var item in items) { var l = item.listing; if ((auction == null ? l.status != "ACTIVE" || l.listingType != "FIXED_PRICE" || l.price == null || l.endedAt <= now : l.status != "SOLD") || l.quantity < item.quantity || l.seller.accountStatus != "ACTIVE" || l.sellerId == uid || l.publishedAt > now) throw Fail("CART_UNAVAILABLE", "An item is unavailable. Review your selection."); }
-        decimal UnitPrice(CartItem item) => auction?.winningPrice ?? item.listing.price!.Value;
+        decimal UnitPrice(CartItem item)
+        {
+            if (auction != null && auction.winningPrice.HasValue) return auction.winningPrice.Value;
+            var promo = item.listing.ListingPromotion;
+            if (promo != null && promo.isActive && promo.startsAt <= now && promo.endsAt > now)
+            {
+                return promo.salePrice;
+            }
+            return item.listing.price!.Value;
+        }
         var subtotal = items.Sum(x => x.quantity * UnitPrice(x)); decimal discount = 0;
         Coupon? coupon = null;
         if (!string.IsNullOrWhiteSpace(r.CouponCode))
@@ -125,7 +134,7 @@ public sealed class BuyerWorkflowService(BuyerSchemaContext db, IConfiguration? 
         foreach (var seller in sellers)
         {
             var policies = seller.Select(x => x.listing.shippingPolicyId).Distinct().ToArray();
-            var options = await db.ShippingOptions.Where(x => x.isActive && x.shippingPolicy.isActive && x.shippingPolicy.sellerId == seller.Key && policies.Contains(x.shippingPolicyId)).OrderBy(x => x.flatRate).ToListAsync(ct);
+            var options = await db.ShippingOptions.Where(x => x.isActive && x.shippingPolicy.isActive && x.shippingPolicy.sellerId == seller.Key && policies.Contains(x.shippingPolicyId) && x.shippingPolicy.ShippingPolicyDestinationCountries.Any(d => d.countryCode == address.countryCode)).OrderBy(x => x.flatRate).ToListAsync(ct);
             if (policies.Length != 1 || policies[0] == null) throw Fail("SHIPPING_UNAVAILABLE", "Items from this seller require compatible shipping policies.");
             ShippingOption? option = r.ShippingOptions != null && r.ShippingOptions.TryGetValue(seller.Key, out var selected) ? options.SingleOrDefault(x => x.id == selected) : options.FirstOrDefault();
             if (option == null) throw Fail("SHIPPING_UNAVAILABLE", "No valid shipping option for seller.");

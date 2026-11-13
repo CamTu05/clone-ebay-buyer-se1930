@@ -53,7 +53,7 @@ export function CatalogPage() {
   const minimum = readPrice(searchParams.get('min'))
   const maximum = readPrice(searchParams.get('max'))
   const sort = searchParams.get('sort') ?? 'default'
-  const [view, setView] = useState<'list' | 'grid'>('list')
+  const view: 'list' | 'grid' = searchParams.get('view') === 'grid' ? 'grid' : 'list'
   const [retry, setRetry] = useState(0)
   const filters = searchParams.toString()
   const requestKey = `${page}:${pageSize}:${retry}:${filters}`
@@ -77,6 +77,7 @@ export function CatalogPage() {
     return () => controller.abort()
   }, [page, pageSize, requestKey, filters])
 
+  function setView(nextView: 'list' | 'grid') { const next = new URLSearchParams(searchParams); if (nextView === 'grid') next.set('view', 'grid'); else next.delete('view'); setSearchParams(next) }
   function changePage(nextPage: number, nextPageSize = pageSize) {
     const next = new URLSearchParams(searchParams)
     next.set('page', String(nextPage)); next.set('pageSize', String(nextPageSize)); setSearchParams(next)
@@ -84,12 +85,12 @@ export function CatalogPage() {
   function setFilter(key: string, value: string) {
     const next = new URLSearchParams(searchParams)
     if (value) next.set(key, value)
-    else next.delete(key)
+    else { next.delete(key); if (key === 'q') next.delete('match') }
     next.set('page', '1'); setSearchParams(next)
   }
   function clearFilters() {
     const next = new URLSearchParams(searchParams)
-    for (const key of ['q', 'category', 'type', 'min', 'max', 'sort']) next.delete(key)
+    for (const key of ['q','match','exclude','category','desc','completed','sold','type','min','max','condition','returnsAccepted','freeReturns','dealsOnly','saleItems','endingWithinMinutes','minBids','maxBids','minQuantity','maxQuantity','freeShipping','localPickup','itemCountry','availableTo','sellers','sellerMode','sort','view']) next.delete(key)
     next.set('page', '1'); setSearchParams(next)
   }
   function applyPrice(event: FormEvent<HTMLFormElement>) {
@@ -121,7 +122,7 @@ export function CatalogPage() {
       </aside>
       <div className="eb-catalog-results">{watchlist.error && <p role="alert">{watchlist.error}</p>}
         <div className="eb-results-heading"><div><h1 id="catalog-title">{query ? `Results for “${query}”` : category || 'All listings'}</h1>{current.status === 'success' && <p>{hasFilters ? `${current.data.totalItems} matching items` : `${current.data.totalItems.toLocaleString()} results`}</p>}</div><Link className="eb-saved-link" to="/watchlist"><HeartIcon />Your Watchlist</Link></div>
-        <div className="eb-results-toolbar"><div className="eb-buying-tabs" aria-label="Buying format">{buyingOptions.map(([value, label]) => <button key={value} className={listingType === value ? 'is-active' : ''} aria-pressed={listingType === value} type="button" onClick={() => setFilter('type', value)}>{value ? label : 'All'}</button>)}</div><div className="eb-result-view"><label><span className="sr-only">Sort products</span><select value={sort} onChange={event => setFilter('sort', event.target.value)}><option value="default">Default order</option><option value="price-low">Price: lowest first</option><option value="price-high">Price: highest first</option><option value="name">Name: A to Z</option></select></label><button type="button" className="eb-view-button" aria-label={view === 'list' ? 'Show grid view' : 'Show list view'} onClick={() => setView(view === 'list' ? 'grid' : 'list')}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">{view === 'list' ? <><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></> : <><path d="M9 5h12M9 12h12M9 19h12" /><path d="M3 5h2M3 12h2M3 19h2" /></>}</svg></button></div></div>
+        <div className="eb-results-toolbar"><div className="eb-buying-tabs" aria-label="Buying format">{buyingOptions.map(([value, label]) => <button key={value} className={listingType === value ? 'is-active' : ''} aria-pressed={listingType === value} type="button" onClick={() => setFilter('type', value)}>{value ? label : 'All'}</button>)}</div><div className="eb-result-view"><label><span className="sr-only">Sort products</span><select value={sort} onChange={event => setFilter('sort', event.target.value)}><option value="default">Default order</option><option value="price-low">Price: lowest first</option><option value="price-high">Price: highest first</option><option value="name">Name: A to Z</option><option value="newest">Newest</option><option value="ending-soon">Ending soon</option><option value="bids-high">Most bids</option><option value="quantity-high">Highest quantity</option></select></label><button type="button" className="eb-view-button" aria-label={view === 'list' ? 'Show grid view' : 'Show list view'} onClick={() => setView(view === 'list' ? 'grid' : 'list')}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">{view === 'list' ? <><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></> : <><path d="M9 5h12M9 12h12M9 19h12" /><path d="M3 5h2M3 12h2M3 19h2" /></>}</svg></button></div></div>
         <div className="eb-result-meta"><span>{current.status === 'success' && current.data.items.length > 0 ? `Items ${(page - 1) * pageSize + 1}–${(page - 1) * pageSize + current.data.items.length} of ${current.data.totalItems}` : 'Find something you’ll love'}</span><label>Items per page <select id="catalog-page-size" value={pageSize} onChange={event => changePage(1, Number(event.target.value))}>{pageSizes.map(size => <option key={size} value={size}>{size}</option>)}</select></label></div>
         {(hasFilters || sort !== 'default') && <div className="eb-active-filters"><span>Active filters</span>{query && <button type="button" onClick={() => setFilter('q', '')}>{query} <span aria-hidden="true">×</span><span className="sr-only">Remove search</span></button>}{minimum !== undefined && <button type="button" onClick={() => setFilter('min', '')}>From {priceFormatter.format(minimum)} ×</button>}{maximum !== undefined && <button type="button" onClick={() => setFilter('max', '')}>Up to {priceFormatter.format(maximum)} ×</button>}<button className="eb-clear-filter" type="button" onClick={clearFilters}>Clear filters</button></div>}
         <div aria-live="polite" aria-busy={current.status === 'loading'}>

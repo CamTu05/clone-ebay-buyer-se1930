@@ -59,6 +59,8 @@ public partial class User
 
     public virtual ICollection<OrderTable> OrderTablesellers { get; set; } = new List<OrderTable>();
 
+    public virtual ICollection<ReturnPolicy> ReturnPolicies { get; set; } = new List<ReturnPolicy>();
+
     public virtual ICollection<ReturnRequest> ReturnRequests { get; set; } = new List<ReturnRequest>();
 
     public virtual ICollection<Review> Reviews { get; set; } = new List<Review>();

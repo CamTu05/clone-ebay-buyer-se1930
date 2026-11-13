@@ -3,6 +3,8 @@ import type { FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { buyerGet } from '../buyerApi'
 import { apiClient } from '../../shared/api/apiClient'
+import { loadCountries } from '../addresses/addressesApi'
+import type { Country } from '../addresses/addressesApi'
 import './advancedSearch.css'
 
 interface CategoryItem {
@@ -28,6 +30,7 @@ export function AdvancedSearchPage() {
 
   // Categories from backend
   const [categories, setCategories] = useState<CategoryItem[]>([])
+  const [countries, setCountries] = useState<Country[]>([])
 
   useEffect(() => {
     const c = new AbortController()
@@ -39,16 +42,22 @@ export function AdvancedSearchPage() {
     return () => c.abort()
   }, [])
 
+  useEffect(() => {
+    const controller = new AbortController()
+    loadCountries(controller.signal).then(setCountries).catch(() => {})
+    return () => controller.abort()
+  }, [])
+
   // Section references for smooth scrolling & focus
   const findItemsRef = useRef<HTMLDivElement>(null)
   const sellersRef = useRef<HTMLDivElement>(null)
   const keywordsInputRef = useRef<HTMLInputElement>(null)
-  const sellerInputRef = useRef<HTMLInputElement>(null)
+  const sellerInputRef = useRef<HTMLTextAreaElement>(null)
   const itemNumberInputRef = useRef<HTMLInputElement>(null)
 
   // Form Fields State
   const [keywords, setKeywords] = useState('')
-  const [matchType, setMatchType] = useState<'all' | 'any' | 'exact'>('all')
+  const [matchType, setMatchType] = useState<'all' | 'any' | 'exact' | 'exact-any-order'>('all')
   const [excludeWords, setExcludeWords] = useState('')
   const [category, setCategory] = useState('')
   const [searchDesc, setSearchDesc] = useState(false)
@@ -67,24 +76,33 @@ export function AdvancedSearchPage() {
   // Conditions
   const [conditionNew, setConditionNew] = useState(false)
   const [conditionUsed, setConditionUsed] = useState(false)
-  const [conditionRefurbished, setConditionRefurbished] = useState(false)
-  const [conditionForParts, setConditionForParts] = useState(false)
+  const [conditionNotSpecified, setConditionNotSpecified] = useState(false)
 
-  // Listing Time & Bids
+  const [returnsAccepted, setReturnsAccepted] = useState(false)
+  const [freeReturns, setFreeReturns] = useState(false)
+  const [dealsOnly, setDealsOnly] = useState(false)
+  const [saleItems, setSaleItems] = useState(false)
+
+  // Listing Time, Bids & Quantity
   const [endingWithin, setEndingWithin] = useState('')
   const [minBids, setMinBids] = useState('')
   const [maxBids, setMaxBids] = useState('')
+  const [minQuantity, setMinQuantity] = useState('')
+  const [maxQuantity, setMaxQuantity] = useState('')
 
   // Shipping & Sellers
   const [freeShipping, setFreeShipping] = useState(false)
   const [localPickup, setLocalPickup] = useState(false)
+  const [itemCountry, setItemCountry] = useState('')
+  const [availableTo, setAvailableTo] = useState('')
   const [filterSellers, setFilterSellers] = useState(false)
   const [sellerMode, setSellerMode] = useState<'include' | 'exclude'>('include')
-  const [sellerUsername, setSellerUsername] = useState('')
+  const [sellerUsernames, setSellerUsernames] = useState('')
 
-  // Sort & Pagination
+  // Sort, View & Pagination
   const [sort, setSort] = useState('default')
-  const [pageSize, setPageSize] = useState('25')
+  const [view, setView] = useState<'list' | 'grid'>('list')
+  const [pageSize, setPageSize] = useState('20')
 
   // Direct Item ID Form State
   const [directItemId, setDirectItemId] = useState('')
@@ -138,6 +156,9 @@ export function AdvancedSearchPage() {
     return ''
   })()
 
+  const quantityRangeError = minQuantity && maxQuantity && Number(minQuantity) > Number(maxQuantity)
+    ? 'Min quantity cannot be greater than Max quantity.' : ''
+
   function handleSwapPrices() {
     const temp = minPrice
     setMinPrice(maxPrice)
@@ -181,18 +202,26 @@ export function AdvancedSearchPage() {
     setMaxPrice('')
     setConditionNew(false)
     setConditionUsed(false)
-    setConditionRefurbished(false)
-    setConditionForParts(false)
+    setConditionNotSpecified(false)
+    setReturnsAccepted(false)
+    setFreeReturns(false)
+    setDealsOnly(false)
+    setSaleItems(false)
     setEndingWithin('')
     setMinBids('')
     setMaxBids('')
+    setMinQuantity('')
+    setMaxQuantity('')
     setFreeShipping(false)
     setLocalPickup(false)
+    setItemCountry('')
+    setAvailableTo('')
     setFilterSellers(false)
     setSellerMode('include')
-    setSellerUsername('')
+    setSellerUsernames('')
     setSort('default')
-    setPageSize('25')
+    setView('list')
+    setPageSize('20')
     setFormError('')
     setDirectItemId('')
     setDirectItemError('')
@@ -230,11 +259,11 @@ export function AdvancedSearchPage() {
 
     const cleanKeywords = keywords.trim()
     const cleanCategory = category.trim()
-    const cleanSeller = filterSellers ? sellerUsername.trim() : ''
+    const cleanSellers = filterSellers ? sellerUsernames.split(/[,\n]+/).map(value => value.trim()).filter(Boolean) : []
 
     // BR-01: Required Input Validation
     // User must enter at least 1 of: Keyword, Category, or Seller Username
-    if (!cleanKeywords && !cleanCategory && !cleanSeller) {
+    if (!cleanKeywords && !cleanCategory && cleanSellers.length === 0) {
       setFormError('Please enter keywords, choose a specific category, or specify a seller username before searching.')
       findItemsRef.current?.scrollIntoView({ behavior: 'smooth' })
       keywordsInputRef.current?.focus()
@@ -242,7 +271,7 @@ export function AdvancedSearchPage() {
     }
 
     // Range Validation Check
-    if (priceRangeError || bidsRangeError) {
+    if (priceRangeError || bidsRangeError || quantityRangeError) {
       return
     }
 
@@ -290,28 +319,35 @@ export function AdvancedSearchPage() {
     const conditions: string[] = []
     if (conditionNew) conditions.push('New')
     if (conditionUsed) conditions.push('Used')
-    if (conditionRefurbished) conditions.push('Refurbished')
-    if (conditionForParts) conditions.push('For parts')
+    if (conditionNotSpecified) conditions.push('Not specified')
     if (conditions.length > 0) params.set('condition', conditions.join(','))
 
-    // Listing Time & Bids
-    if (endingWithin && !completedListings && !soldListings) {
-      params.set('endingWithin', endingWithin)
-    }
+    if (returnsAccepted) params.set('returnsAccepted', 'true')
+    if (freeReturns) params.set('freeReturns', 'true')
+    if (dealsOnly) params.set('dealsOnly', 'true')
+    if (saleItems) params.set('saleItems', 'true')
+
+    // Listing Time, Bids & Quantity
+    if (endingWithin && !completedListings && !soldListings) params.set('endingWithinMinutes', String(Number(endingWithin.replace('h', '')) * 60))
     if (minBids.trim()) params.set('minBids', minBids.trim())
     if (maxBids.trim()) params.set('maxBids', maxBids.trim())
+    if (minQuantity.trim()) params.set('minQuantity', minQuantity.trim())
+    if (maxQuantity.trim()) params.set('maxQuantity', maxQuantity.trim())
 
-    // Shipping & Sellers
+    // Shipping, Location & Sellers
     if (freeShipping) params.set('freeShipping', 'true')
     if (localPickup) params.set('localPickup', 'true')
-    if (cleanSeller) {
-      params.set('seller', cleanSeller)
+    if (itemCountry) params.set('itemCountry', itemCountry)
+    if (availableTo) params.set('availableTo', availableTo)
+    if (cleanSellers.length > 0) {
+      params.set('sellers', cleanSellers.join(','))
       params.set('sellerMode', sellerMode)
     }
 
-    // Sort & Pagination
+    // Sort, View & Pagination
     if (sort !== 'default') params.set('sort', sort)
-    if (pageSize !== '25') params.set('pageSize', pageSize)
+    if (view !== 'list') params.set('view', view)
+    if (pageSize !== '20') params.set('pageSize', pageSize)
 
     // Navigate to Search & Category Results Screen
     navigate(`/catalog?${params.toString()}`)
@@ -476,11 +512,12 @@ export function AdvancedSearchPage() {
                     id="adv-match-type"
                     className="eb-adv-select"
                     value={matchType}
-                    onChange={e => setMatchType(e.target.value as 'all' | 'any' | 'exact')}
+                    onChange={e => setMatchType(e.target.value as 'all' | 'any' | 'exact' | 'exact-any-order')}
                   >
                     <option value="all">All words, any order</option>
                     <option value="any">Any words, any order</option>
                     <option value="exact">Exact words, exact order</option>
+                    <option value="exact-any-order">Exact words, any order</option>
                   </select>
                 </div>
 
@@ -540,7 +577,7 @@ export function AdvancedSearchPage() {
                         checked={completedListings}
                         onChange={e => handleCompletedChange(e.target.checked)}
                       />
-                      Completed listings
+                      Completed items
                     </label>
                     <label className="eb-adv-checkbox-label">
                       <input
@@ -548,7 +585,7 @@ export function AdvancedSearchPage() {
                         checked={soldListings}
                         onChange={e => handleSoldChange(e.target.checked)}
                       />
-                      Sold listings
+                      Sold items
                     </label>
                   </div>
                 </div>
@@ -653,23 +690,25 @@ export function AdvancedSearchPage() {
                   <label className="eb-adv-checkbox-label">
                     <input
                       type="checkbox"
-                      checked={conditionRefurbished}
-                      onChange={e => setConditionRefurbished(e.target.checked)}
+                      checked={conditionNotSpecified}
+                      onChange={e => setConditionNotSpecified(e.target.checked)}
                     />
-                    Refurbished
-                  </label>
-                  <label className="eb-adv-checkbox-label">
-                    <input
-                      type="checkbox"
-                      checked={conditionForParts}
-                      onChange={e => setConditionForParts(e.target.checked)}
-                    />
-                    For parts or not working
+                    Not specified
                   </label>
                 </div>
               </div>
 
-              {/* SECTION 5: Listing Time & Bids */}
+              <div className="eb-adv-section">
+                <h2 className="eb-adv-section-title">Show results</h2>
+                <div className="eb-adv-checkbox-group">
+                  <label className="eb-adv-checkbox-label"><input type="checkbox" checked={returnsAccepted} onChange={e => setReturnsAccepted(e.target.checked)} />Returns accepted</label>
+                  <label className="eb-adv-checkbox-label"><input type="checkbox" checked={freeReturns} onChange={e => setFreeReturns(e.target.checked)} />Free returns</label>
+                  <label className="eb-adv-checkbox-label"><input type="checkbox" checked={dealsOnly} onChange={e => setDealsOnly(e.target.checked)} />Deals and savings</label>
+                  <label className="eb-adv-checkbox-label"><input type="checkbox" checked={saleItems} onChange={e => setSaleItems(e.target.checked)} />Sale items</label>
+                </div>
+              </div>
+
+              {/* SECTION 5: Listing Time, Bids & Quantity */}
               <div className="eb-adv-section">
                 <h2 className="eb-adv-section-title">Listing Time & Bids</h2>
 
@@ -733,6 +772,11 @@ export function AdvancedSearchPage() {
                     <span className="eb-adv-inline-error">{bidsRangeError}</span>
                   )}
                 </div>
+                <div className="eb-adv-row" style={{ marginTop: 18 }}>
+                  <span className="eb-adv-label">Available quantity</span>
+                  <div className="eb-adv-range-inputs"><input type="number" min="1" className="eb-adv-input" placeholder="Min quantity" value={minQuantity} onChange={e => setMinQuantity(e.target.value)} /><span className="eb-adv-range-divider">to</span><input type="number" min="1" className="eb-adv-input" placeholder="Max quantity" value={maxQuantity} onChange={e => setMaxQuantity(e.target.value)} /></div>
+                  {quantityRangeError && <span className="eb-adv-inline-error">{quantityRangeError}</span>}
+                </div>
               </div>
 
               {/* SECTION 6: Shipping & Sellers (Anchor: #sellers-section) */}
@@ -760,6 +804,9 @@ export function AdvancedSearchPage() {
                     </label>
                   </div>
                 </div>
+
+                <div className="eb-adv-row" style={{ marginTop: 22 }}><label htmlFor="adv-item-country" className="eb-adv-label">Item located in</label><select id="adv-item-country" className="eb-adv-select" value={itemCountry} onChange={e => setItemCountry(e.target.value)}><option value="">Any country</option>{countries.map(country => <option key={country.code} value={country.code}>{country.name}</option>)}</select></div>
+                <div className="eb-adv-row"><label htmlFor="adv-available-to" className="eb-adv-label">Available to</label><select id="adv-available-to" className="eb-adv-select" value={availableTo} onChange={e => setAvailableTo(e.target.value)}><option value="">Any country</option>{countries.map(country => <option key={country.code} value={country.code}>{country.name}</option>)}</select></div>
 
                 <div className="eb-adv-row" style={{ marginTop: 22 }}>
                   <label className="eb-adv-checkbox-label" style={{ fontWeight: 600, fontSize: 15 }}>
@@ -795,18 +842,8 @@ export function AdvancedSearchPage() {
                           Exclude (Exclude these sellers)
                         </label>
                       </div>
-                      <label htmlFor="adv-seller-username" className="eb-adv-label">
-                        Seller username
-                      </label>
-                      <input
-                        id="adv-seller-username"
-                        ref={sellerInputRef}
-                        type="text"
-                        className="eb-adv-input"
-                        placeholder="e.g. tech_store, bestdeals"
-                        value={sellerUsername}
-                        onChange={e => setSellerUsername(e.target.value)}
-                      />
+                      <label htmlFor="adv-seller-username" className="eb-adv-label">Seller usernames</label>
+                      <textarea id="adv-seller-username" ref={sellerInputRef} className="eb-adv-input" rows={3} placeholder="Separate usernames with commas or new lines" value={sellerUsernames} onChange={e => setSellerUsernames(e.target.value)} />
                     </div>
                   )}
                 </div>
@@ -827,12 +864,16 @@ export function AdvancedSearchPage() {
                     onChange={e => setSort(e.target.value)}
                   >
                     <option value="default">Best Match</option>
-                    <option value="ending_soon">Time: ending soonest</option>
+                    <option value="ending-soon">Time: ending soonest</option>
                     <option value="newest">Time: newly listed</option>
-                    <option value="price_asc">Price + Shipping: lowest first</option>
-                    <option value="price_desc">Price + Shipping: highest first</option>
+                    <option value="price-low">Price: lowest first</option>
+                    <option value="price-high">Price: highest first</option>
+                    <option value="bids-high">Number of bids: highest first</option>
+                    <option value="quantity-high">Quantity: highest first</option>
                   </select>
                 </div>
+
+                <fieldset className="eb-adv-row"><legend className="eb-adv-label">View results</legend><label className="eb-adv-radio-label"><input type="radio" name="view" checked={view === 'list'} onChange={() => setView('list')} />List</label><label className="eb-adv-radio-label"><input type="radio" name="view" checked={view === 'grid'} onChange={() => setView('grid')} />Gallery</label></fieldset>
 
                 <div className="eb-adv-row">
                   <label htmlFor="adv-page-size" className="eb-adv-label">
@@ -844,7 +885,7 @@ export function AdvancedSearchPage() {
                     value={pageSize}
                     onChange={e => setPageSize(e.target.value)}
                   >
-                    <option value="25">25 items</option>
+                    <option value="20">20 items</option>
                     <option value="50">50 items</option>
                     <option value="100">100 items</option>
                   </select>

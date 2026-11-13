@@ -10,9 +10,9 @@ BEGIN TRY
  BEGIN TRAN;
  IF EXISTS(SELECT 1 FROM dbo.[User] WITH(UPDLOCK,HOLDLOCK) WHERE email=N'seed.buyer01@example.test')
   THROW 51001, 'Demo seed already exists. No changes made.', 1;
- DECLARE @now datetime2(3)=SYSUTCDATETIME(), @i int=1,@uid int,@sid int,@cat int,@pid int,@lid int,@policy int,@option int,@cart int,@auction int;
-  DECLARE @buyers TABLE(n int PRIMARY KEY,id int);
-  DECLARE @sellers TABLE(n int PRIMARY KEY,id int,policyId int,optionId int);
+ DECLARE @now datetime2(3)=SYSUTCDATETIME(), @i int=1,@uid int,@sid int,@cat int,@pid int,@lid int,@policy int,@returnPolicy int,@option int,@cart int,@auction int;
+   DECLARE @buyers TABLE(n int PRIMARY KEY,id int);
+   DECLARE @sellers TABLE(n int PRIMARY KEY,id int,policyId int,returnPolicyId int,optionId int);
   DECLARE @cats TABLE(n int PRIMARY KEY,id int);
   DECLARE @list TABLE(n int PRIMARY KEY,id int,productId int,sellerId int,optionId int,price decimal(18,2),title nvarchar(255),imageUrl nvarchar(1000));
  WHILE @i<=12
@@ -30,10 +30,15 @@ BEGIN TRY
  BEGIN
   INSERT dbo.[User](username,email,role,emailVerified) VALUES(CONCAT(N'Demo Store ',@i),CONCAT(N'seed.seller',@i,N'@example.test'),N'SELLER',1);
   SET @sid=SCOPE_IDENTITY();
-  INSERT dbo.ShippingPolicy(sellerId,name) VALUES(@sid,N'Giao hàng nội địa demo'); SET @policy=SCOPE_IDENTITY();
-  INSERT dbo.ShippingOption(shippingPolicyId,serviceName,serviceType,flatRate,estimatedMinDays,estimatedMaxDays) VALUES(@policy,N'Standard demo',N'STANDARD',30000,2,5); SET @option=SCOPE_IDENTITY();
-  INSERT @sellers VALUES(@i,@sid,@policy,@option);
-  INSERT dbo.ShippingOption(shippingPolicyId,serviceName,serviceType,flatRate,estimatedMinDays,estimatedMaxDays) VALUES(@policy,N'Express demo',N'EXPRESS',60000,1,2);
+   INSERT dbo.ShippingPolicy(sellerId,name) VALUES(@sid,N'Giao hàng demo'); SET @policy=SCOPE_IDENTITY();
+   INSERT dbo.ShippingPolicyDestinationCountry(shippingPolicyId,countryCode) VALUES(@policy,N'VN');
+   IF @i<=2 INSERT dbo.ShippingPolicyDestinationCountry(shippingPolicyId,countryCode) VALUES(@policy,N'US');
+   INSERT dbo.ReturnPolicy(sellerId,name,returnsAccepted,freeReturns,returnWindowDays)
+   VALUES(@sid,CASE WHEN @i=4 THEN N'Không nhận trả hàng' ELSE N'Đổi trả 30 ngày' END,CASE WHEN @i=4 THEN 0 ELSE 1 END,CASE WHEN @i=2 THEN 1 ELSE 0 END,CASE WHEN @i=4 THEN NULL ELSE 30 END); SET @returnPolicy=SCOPE_IDENTITY();
+   INSERT dbo.ShippingOption(shippingPolicyId,serviceName,serviceType,flatRate,estimatedMinDays,estimatedMaxDays) VALUES(@policy,N'Standard demo',N'STANDARD',CASE WHEN @i=2 THEN 0 ELSE 30000 END,2,5); SET @option=SCOPE_IDENTITY();
+   INSERT @sellers VALUES(@i,@sid,@policy,@returnPolicy,@option);
+   INSERT dbo.ShippingOption(shippingPolicyId,serviceName,serviceType,flatRate,estimatedMinDays,estimatedMaxDays) VALUES(@policy,N'Express demo',N'EXPRESS',60000,1,2);
+   IF @i=1 INSERT dbo.ShippingOption(shippingPolicyId,serviceName,serviceType,flatRate) VALUES(@policy,N'Local pickup demo',N'LOCAL_PICKUP',0);
   SET @i+=1;
  END;
  SET @i=1;
@@ -46,7 +51,7 @@ BEGIN TRY
  WHILE @i<=48
  BEGIN
   SELECT @cat=id FROM @cats WHERE n=1+(@i-1)%6;
-  SELECT @sid=id,@policy=policyId,@option=optionId FROM @sellers WHERE n=1+(@i-1)%4;
+   SELECT @sid=id,@policy=policyId,@returnPolicy=returnPolicyId,@option=optionId FROM @sellers WHERE n=1+(@i-1)%4;
    DECLARE @kind int=1+(@i-1)%6;
    DECLARE @title nvarchar(255)=CONCAT(CHOOSE(@kind,N'Dell Latitude 7420',N'Samsung Galaxy S23',N'Canon EOS R50',N'Adidas Ultraboost Light',N'Philips LED desk lamp',N'Vintage die-cast model'),N' - Mẫu ',@i);
    DECLARE @price decimal(18,2)=250000+@i*125000;
@@ -62,10 +67,12 @@ BEGIN TRY
    INSERT dbo.Product(title,description,categoryId,brand) VALUES(@title,@productDescription,@cat,CHOOSE(@kind,N'Dell',N'Samsung',N'Canon',N'Adidas',N'Philips',N'Minichamps'));
    SET @pid=SCOPE_IDENTITY();
    INSERT dbo.ProductImage(productId,imageUrl,isPrimary) VALUES(@pid,@imageUrl,1);
-   INSERT dbo.Listing(productId,sellerId,categoryId,shippingPolicyId,title,description,itemCondition,listingType,price,quantity,status,publishedAt)
-   VALUES(@pid,@sid,@cat,@policy,@title,@listingDescription,CASE WHEN @i%3=0 THEN N'Used - Good' ELSE N'New' END,CASE WHEN @i>40 THEN N'AUCTION' ELSE N'FIXED_PRICE' END,CASE WHEN @i>40 THEN NULL ELSE @price END,CASE WHEN @i>40 THEN 1 ELSE 20 END,N'ACTIVE',DATEADD(day,-2,@now));
+   INSERT dbo.Listing(productId,sellerId,categoryId,shippingPolicyId,returnPolicyId,title,description,itemCondition,itemCountryCode,listingType,price,quantity,status,publishedAt)
+   VALUES(@pid,@sid,@cat,@policy,@returnPolicy,@title,@listingDescription,CASE WHEN @i%7=0 THEN NULL WHEN @i%3=0 THEN N'Used - Good' ELSE N'New' END,CASE WHEN @i%4=0 THEN N'US' ELSE N'VN' END,CASE WHEN @i>40 THEN N'AUCTION' ELSE N'FIXED_PRICE' END,CASE WHEN @i>40 THEN NULL ELSE @price END,CASE WHEN @i>40 THEN 1 ELSE 5+@i%20 END,N'ACTIVE',DATEADD(day,-2,@now));
    SET @lid=SCOPE_IDENTITY(); INSERT @list VALUES(@i,@lid,@pid,@sid,@option,@price,@title,@imageUrl);
    INSERT dbo.ListingImage(listingId,imageUrl,isPrimary) VALUES(@lid,@imageUrl,1);
+   IF @i<=40 AND @i%5=0 INSERT dbo.ListingPromotion(listingId,promotionType,originalPrice,salePrice,startsAt,endsAt)
+    VALUES(@lid,CASE WHEN @i%10=0 THEN N'DEAL' ELSE N'SALE' END,@price,ROUND(@price*0.85,2),DATEADD(day,-1,@now),DATEADD(day,7,@now));
   IF @i>40
   BEGIN
    SELECT @uid=id FROM @buyers WHERE n=1;
@@ -78,12 +85,12 @@ BEGIN TRY
   SET @i=1;
   WHILE @i<=4
   BEGIN
-   SELECT @sid=id,@policy=policyId FROM @sellers WHERE n=@i;
+   SELECT @sid=id,@policy=policyId,@returnPolicy=returnPolicyId FROM @sellers WHERE n=@i;
    SELECT @cat=id FROM @cats WHERE n=@i;
    SET @title=CHOOSE(@i,N'Custom gaming laptop build',N'Unlocked Android smartphone bundle',N'Handmade leather camera strap',N'Limited edition running shoes');
    SET @imageUrl=CONCAT(N'/images/products/',CHOOSE(@i,N'laptop.webp',N'smartphone.webp',N'camera.webp',N'sneakers.webp'));
-   INSERT dbo.Listing(productId,sellerId,categoryId,shippingPolicyId,title,description,itemCondition,listingType,price,quantity,status,publishedAt)
-   VALUES(NULL,@sid,@cat,@policy,@title,N'Standalone listing created directly by the seller without a catalog product link.',CASE WHEN @i=3 THEN N'Used - Good' ELSE N'New' END,N'FIXED_PRICE',450000+@i*350000,5+@i,N'ACTIVE',DATEADD(day,-1,@now));
+   INSERT dbo.Listing(productId,sellerId,categoryId,shippingPolicyId,returnPolicyId,title,description,itemCondition,itemCountryCode,listingType,price,quantity,status,publishedAt)
+   VALUES(NULL,@sid,@cat,@policy,@returnPolicy,@title,N'Standalone listing created directly by the seller without a catalog product link.',CASE WHEN @i=3 THEN N'Used - Good' ELSE N'New' END,CASE WHEN @i=4 THEN N'US' ELSE N'VN' END,N'FIXED_PRICE',450000+@i*350000,5+@i,N'ACTIVE',DATEADD(day,-1,@now));
    SET @lid=SCOPE_IDENTITY();
    INSERT dbo.ListingImage(listingId,imageUrl,isPrimary) VALUES(@lid,@imageUrl,1);
    SET @i+=1;

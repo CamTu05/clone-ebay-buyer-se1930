@@ -4,7 +4,7 @@
   IMPORTANT: This script does not drop any existing database.
   This script intentionally aborts if CloneEbayBuyer already exists.
 
-  Scope: 33 tables, 1 listing view; account, catalog/listings, shopping cart,
+  Scope: 36 tables, 1 listing view; account, catalog/listings, shopping cart,
   auctions, multi-seller checkout, group-level mock payment, guest access,
   shipping, cancellation/return requests, feedback, notifications.
 
@@ -167,6 +167,26 @@ GO
 CREATE INDEX IX_ShippingPolicy_Seller ON dbo.ShippingPolicy(sellerId);
 GO
 
+CREATE TABLE dbo.ReturnPolicy (
+    id               INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_ReturnPolicy PRIMARY KEY,
+    sellerId         INT NOT NULL,
+    name             NVARCHAR(150) NOT NULL,
+    returnsAccepted  BIT NOT NULL CONSTRAINT DF_ReturnPolicy_ReturnsAccepted DEFAULT (0),
+    freeReturns      BIT NOT NULL CONSTRAINT DF_ReturnPolicy_FreeReturns DEFAULT (0),
+    returnWindowDays INT NULL,
+    isActive         BIT NOT NULL CONSTRAINT DF_ReturnPolicy_IsActive DEFAULT (1),
+    createdAt        DATETIME2(3) NOT NULL CONSTRAINT DF_ReturnPolicy_CreatedAt DEFAULT SYSUTCDATETIME(),
+    CONSTRAINT FK_ReturnPolicy_Seller FOREIGN KEY (sellerId) REFERENCES dbo.[User](id),
+    CONSTRAINT UQ_ReturnPolicy_IdSeller UNIQUE (id, sellerId),
+    CONSTRAINT CK_ReturnPolicy_Name CHECK (LEN(LTRIM(RTRIM(name))) > 0),
+    CONSTRAINT CK_ReturnPolicy_Terms CHECK (
+        (returnsAccepted = 0 AND freeReturns = 0 AND returnWindowDays IS NULL) OR
+        (returnsAccepted = 1 AND returnWindowDays BETWEEN 1 AND 365))
+);
+GO
+CREATE INDEX IX_ReturnPolicy_Seller ON dbo.ReturnPolicy(sellerId);
+GO
+
 CREATE TABLE dbo.ShippingOption (
     id               INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_ShippingOption PRIMARY KEY,
     shippingPolicyId INT NOT NULL,
@@ -189,15 +209,28 @@ GO
 CREATE INDEX IX_ShippingOption_Policy ON dbo.ShippingOption(shippingPolicyId);
 GO
 
+CREATE TABLE dbo.ShippingPolicyDestinationCountry (
+    shippingPolicyId INT NOT NULL,
+    countryCode      NVARCHAR(2) NOT NULL,
+    CONSTRAINT PK_ShippingPolicyDestinationCountry PRIMARY KEY (shippingPolicyId, countryCode),
+    CONSTRAINT FK_ShippingPolicyDestinationCountry_Policy FOREIGN KEY (shippingPolicyId) REFERENCES dbo.ShippingPolicy(id) ON DELETE CASCADE,
+    CONSTRAINT CK_ShippingPolicyDestinationCountry_Code CHECK (LEN(countryCode) = 2)
+);
+GO
+CREATE INDEX IX_ShippingPolicyDestinationCountry_CountryPolicy ON dbo.ShippingPolicyDestinationCountry(countryCode, shippingPolicyId);
+GO
+
 CREATE TABLE dbo.Listing (
     id               INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_Listing PRIMARY KEY,
     productId        INT NULL,                  -- independent listings are allowed
     sellerId         INT NOT NULL,
     categoryId       INT NOT NULL,
     shippingPolicyId INT NULL,
+    returnPolicyId   INT NULL,
     title            NVARCHAR(255) NOT NULL,
     description      NVARCHAR(MAX) NULL,
     itemCondition    NVARCHAR(50) NULL,
+    itemCountryCode  NVARCHAR(2) NULL,
     listingType      NVARCHAR(20) NOT NULL,
     price            DECIMAL(18,2) NULL,       -- required for FIXED_PRICE; NULL for AUCTION
     quantity         INT NOT NULL CONSTRAINT DF_Listing_Quantity DEFAULT (1),
@@ -211,6 +244,9 @@ CREATE TABLE dbo.Listing (
     CONSTRAINT FK_Listing_Category FOREIGN KEY (categoryId) REFERENCES dbo.Category(id),
     CONSTRAINT FK_Listing_ShippingPolicySeller FOREIGN KEY (shippingPolicyId, sellerId)
         REFERENCES dbo.ShippingPolicy(id, sellerId),
+    CONSTRAINT FK_Listing_ReturnPolicySeller FOREIGN KEY (returnPolicyId, sellerId)
+        REFERENCES dbo.ReturnPolicy(id, sellerId),
+    CONSTRAINT CK_Listing_ItemCountry CHECK (itemCountryCode IS NULL OR LEN(itemCountryCode) = 2),
     CONSTRAINT CK_Listing_Type CHECK (listingType IN (N'FIXED_PRICE', N'AUCTION')),
     CONSTRAINT CK_Listing_Price CHECK (
         (listingType = N'FIXED_PRICE' AND price IS NOT NULL AND price >= 0)
@@ -224,6 +260,27 @@ CREATE INDEX IX_Listing_CategoryStatus ON dbo.Listing(categoryId, status, listin
 CREATE INDEX IX_Listing_Product ON dbo.Listing(productId) WHERE productId IS NOT NULL;
 CREATE INDEX IX_Listing_SellerStatus ON dbo.Listing(sellerId, status);
 CREATE INDEX IX_Listing_StatusPrice ON dbo.Listing(status, listingType, price);
+CREATE INDEX IX_Listing_ItemCountryStatus ON dbo.Listing(itemCountryCode, status, listingType) WHERE itemCountryCode IS NOT NULL;
+GO
+
+CREATE TABLE dbo.ListingPromotion (
+    id             BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT PK_ListingPromotion PRIMARY KEY,
+    listingId      INT NOT NULL,
+    promotionType  NVARCHAR(10) NOT NULL,
+    originalPrice  DECIMAL(18,2) NOT NULL,
+    salePrice      DECIMAL(18,2) NOT NULL,
+    startsAt       DATETIME2(3) NOT NULL,
+    endsAt         DATETIME2(3) NOT NULL,
+    isActive       BIT NOT NULL CONSTRAINT DF_ListingPromotion_IsActive DEFAULT (1),
+    createdAt      DATETIME2(3) NOT NULL CONSTRAINT DF_ListingPromotion_CreatedAt DEFAULT SYSUTCDATETIME(),
+    CONSTRAINT FK_ListingPromotion_Listing FOREIGN KEY (listingId) REFERENCES dbo.Listing(id),
+    CONSTRAINT CK_ListingPromotion_Type CHECK (promotionType IN (N'DEAL', N'SALE')),
+    CONSTRAINT CK_ListingPromotion_Prices CHECK (originalPrice > 0 AND salePrice >= 0 AND salePrice < originalPrice),
+    CONSTRAINT CK_ListingPromotion_Time CHECK (startsAt < endsAt)
+);
+GO
+CREATE UNIQUE INDEX UX_ListingPromotion_OneEnabledPerListing ON dbo.ListingPromotion(listingId) WHERE isActive = 1;
+CREATE INDEX IX_ListingPromotion_ActiveDates ON dbo.ListingPromotion(isActive, startsAt, endsAt, listingId) INCLUDE (promotionType, originalPrice, salePrice);
 GO
 
 CREATE TABLE dbo.ListingImage (
@@ -724,7 +781,7 @@ GO
 -- VERIFICATION
 -- ===========================================================
 SELECT COUNT(*) AS tableCount
-FROM sys.tables WHERE schema_id = SCHEMA_ID('dbo'); -- expected 33
+FROM sys.tables WHERE schema_id = SCHEMA_ID('dbo'); -- expected 36
 SELECT COUNT(*) AS foreignKeyCount
 FROM sys.foreign_keys WHERE schema_id = SCHEMA_ID('dbo');
 SELECT name AS viewName FROM sys.views WHERE schema_id = SCHEMA_ID('dbo');
