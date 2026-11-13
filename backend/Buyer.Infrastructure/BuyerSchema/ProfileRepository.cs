@@ -1,3 +1,4 @@
+using Buyer.Application.DTOs.Profile;
 using Buyer.Application.Interfaces.Profile;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
@@ -7,6 +8,29 @@ public sealed class ProfileRepository(BuyerSchemaContext db) : IProfileRepositor
 {
     public async Task<ProfileUserSnapshot?> GetByUserIdAsync(int id, CancellationToken ct = default) =>
         await db.Users.AsNoTracking().Where(u => u.id == id).Select(u => new ProfileUserSnapshot(u.id, u.username, u.email, u.phoneNumber, u.avatarURL, u.emailVerified, u.role, u.accountStatus, u.usernameChangedAt, false)).SingleOrDefaultAsync(ct);
+    public async Task<BuyerFeedbackRepositoryPage> GetFeedbackAsync(int buyerId, int page, int pageSize, CancellationToken ct = default)
+    {
+        var query = db.BuyerFeedbacks.AsNoTracking().Where(feedback => feedback.buyerId == buyerId);
+        var totalItems = await query.CountAsync(ct);
+        var skip = ((long)page - 1) * pageSize;
+        var items = skip >= totalItems
+            ? []
+            : await query.OrderByDescending(feedback => feedback.createdAt).ThenByDescending(feedback => feedback.id)
+                .Skip((int)skip).Take(pageSize)
+                .Select(feedback => new BuyerFeedbackItemResponse(
+                    feedback.id,
+                    feedback.orderId,
+                    new BuyerFeedbackSellerResponse(feedback.seller.id, feedback.seller.username, feedback.seller.avatarURL),
+                    feedback.order.OrderItems.OrderBy(item => item.id)
+                        .Select(item => new BuyerFeedbackPurchaseItemResponse(item.id, item.listingId, item.productTitle, item.imageUrl, item.unitPrice)).ToList(),
+                    feedback.order.currency,
+                    feedback.order.buyerId == feedback.buyerId,
+                    feedback.comment,
+                    feedback.createdAt))
+                .ToListAsync(ct);
+        return new(totalItems, items);
+    }
+
     public Task<bool> IsUsernameTakenAsync(string name, int excludeUserId, CancellationToken ct = default) => db.Users.AnyAsync(u => u.id != excludeUserId && u.username.ToUpper() == name.ToUpper(), ct);
     public async Task<ProfileSaveResult> SaveProfileAsync(ProfileChanges changes, CancellationToken ct = default)
     {

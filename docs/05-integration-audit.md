@@ -502,6 +502,12 @@ The scaffold generated 39 model classes: 38 concrete table entity classes plus t
 
 The previous empty handwritten `BuyerDbContext` is no longer registered. DI registers only `CloneEbayDbContext`, avoiding competing persistence models. No `IdentityDbContext`, Identity entities, or `AspNet*` tables were generated.
 
+### Buyer Feedback Database First update
+
+`dbo.BuyerFeedback` represents read-only positive Seller → Buyer feedback in the Buyer Module. It is separate from `SellerFeedback`, whose semantics are Buyer → Seller. `BuyerFeedback.orderId` is unique and references a real seller-specific order; buyer and seller IDs reference `User`. Creation belongs to the Seller Module. The Buyer API exposes only `GET /api/me/feedback`.
+
+The development database is recreated from `database/CloneEbayBuyer.sql` and `database/CloneEbayBuyer.Seed.sql`. Both EF context trees were reverse-engineered and reviewed after adding `BuyerFeedback`; no migration, `Database.Migrate()`, or `EnsureCreated()` is used by the development database workflow.
+
 ### Scaffold command pattern
 
 Use a non-committed connection source whenever possible. The performed local scaffold used Windows integrated authentication and did not contain a password. The repeatable command shape is:

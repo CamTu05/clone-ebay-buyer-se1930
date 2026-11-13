@@ -18,6 +18,8 @@ public partial class CloneEbayDbContext : DbContext
 
     public virtual DbSet<Bid> Bids { get; set; }
 
+    public virtual DbSet<BuyerFeedback> BuyerFeedbacks { get; set; }
+
     public virtual DbSet<CancellationRequest> CancellationRequests { get; set; }
 
     public virtual DbSet<Cart> Carts { get; set; }
@@ -170,6 +172,34 @@ public partial class CloneEbayDbContext : DbContext
                 .HasForeignKey(d => d.bidderId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Bid_Bidder");
+        });
+
+        modelBuilder.Entity<BuyerFeedback>(entity =>
+        {
+            entity.ToTable("BuyerFeedback");
+
+            entity.HasIndex(e => new { e.buyerId, e.createdAt, e.id }, "IX_BuyerFeedback_BuyerCreated").IsDescending(false, true, true);
+
+            entity.HasIndex(e => e.orderId, "UQ_BuyerFeedback_Order").IsUnique();
+
+            entity.Property(e => e.createdAt)
+                .HasPrecision(3)
+                .HasDefaultValueSql("(sysutcdatetime())");
+
+            entity.HasOne(d => d.buyer).WithMany(p => p.BuyerFeedbackbuyers)
+                .HasForeignKey(d => d.buyerId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_BuyerFeedback_Buyer");
+
+            entity.HasOne(d => d.order).WithOne(p => p.BuyerFeedback)
+                .HasForeignKey<BuyerFeedback>(d => d.orderId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_BuyerFeedback_Order");
+
+            entity.HasOne(d => d.seller).WithMany(p => p.BuyerFeedbacksellers)
+                .HasForeignKey(d => d.sellerId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_BuyerFeedback_Seller");
         });
 
         modelBuilder.Entity<CancellationRequest>(entity =>

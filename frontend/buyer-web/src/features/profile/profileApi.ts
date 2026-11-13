@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { apiClient } from '../../shared/api/apiClient'
 import type { ApiEnvelope } from '../authentication/types'
-import type { BuyerProfile, UpdateProfileRequest } from './types'
+import type { BuyerFeedbackPage, BuyerProfile, UpdateProfileRequest } from './types'
 
 function unwrapProfile(envelope: ApiEnvelope<BuyerProfile>): BuyerProfile {
   if (!envelope.success || !envelope.data) {
@@ -13,6 +13,12 @@ function unwrapProfile(envelope: ApiEnvelope<BuyerProfile>): BuyerProfile {
 export async function getProfile(signal?: AbortSignal): Promise<BuyerProfile> {
   const response = await apiClient.get<ApiEnvelope<BuyerProfile>>('/api/me', { signal })
   return unwrapProfile(response.data)
+}
+
+export async function getBuyerFeedback(page: number, pageSize: number, signal?: AbortSignal): Promise<BuyerFeedbackPage> {
+  const response = await apiClient.get<ApiEnvelope<BuyerFeedbackPage>>('/api/me/feedback', { params: { page, pageSize }, signal })
+  if (!response.data.success || !response.data.data) throw new Error('The server returned an invalid feedback response.')
+  return response.data.data
 }
 
 export async function updateProfile(request: UpdateProfileRequest): Promise<BuyerProfile> {

@@ -4,7 +4,7 @@
   IMPORTANT: This script does not drop any existing database.
   This script intentionally aborts if CloneEbayBuyer already exists.
 
-  Scope: 32 tables, 1 listing view; account, catalog/listings, shopping cart,
+  Scope: 33 tables, 1 listing view; account, catalog/listings, shopping cart,
   auctions, multi-seller checkout, group-level mock payment, guest access,
   shipping, cancellation/return requests, feedback, notifications.
 
@@ -592,7 +592,7 @@ CREATE INDEX IX_ReturnRequestItem_OrderItem ON dbo.ReturnRequestItem(orderItemId
 GO
 
 -- ===========================================================
--- F. REVIEWS / FEEDBACK / NOTIFICATIONS (3)
+-- F. REVIEWS / FEEDBACK / NOTIFICATIONS (4)
 -- ===========================================================
 CREATE TABLE dbo.Review (
     id               BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT PK_Review PRIMARY KEY,
@@ -629,6 +629,24 @@ CREATE TABLE dbo.SellerFeedback (
 );
 GO
 CREATE INDEX IX_SellerFeedback_SellerCreated ON dbo.SellerFeedback(sellerId, createdAt DESC);
+GO
+
+CREATE TABLE dbo.BuyerFeedback (
+    id               BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT PK_BuyerFeedback PRIMARY KEY,
+    orderId          BIGINT NOT NULL,
+    buyerId          INT NOT NULL,
+    sellerId         INT NOT NULL,
+    comment          NVARCHAR(MAX) NOT NULL,
+    createdAt        DATETIME2(3) NOT NULL CONSTRAINT DF_BuyerFeedback_CreatedAt DEFAULT SYSUTCDATETIME(),
+    CONSTRAINT FK_BuyerFeedback_Order FOREIGN KEY (orderId) REFERENCES dbo.OrderTable(id),
+    CONSTRAINT FK_BuyerFeedback_Buyer FOREIGN KEY (buyerId) REFERENCES dbo.[User](id),
+    CONSTRAINT FK_BuyerFeedback_Seller FOREIGN KEY (sellerId) REFERENCES dbo.[User](id),
+    CONSTRAINT UQ_BuyerFeedback_Order UNIQUE (orderId),
+    CONSTRAINT CK_BuyerFeedback_Comment CHECK (LEN(LTRIM(RTRIM(comment))) > 0),
+    CONSTRAINT CK_BuyerFeedback_DifferentUsers CHECK (buyerId <> sellerId)
+);
+GO
+CREATE INDEX IX_BuyerFeedback_BuyerCreated ON dbo.BuyerFeedback(buyerId, createdAt DESC, id DESC);
 GO
 
 CREATE TABLE dbo.Notification (
@@ -706,7 +724,7 @@ GO
 -- VERIFICATION
 -- ===========================================================
 SELECT COUNT(*) AS tableCount
-FROM sys.tables WHERE schema_id = SCHEMA_ID('dbo'); -- expected 32
+FROM sys.tables WHERE schema_id = SCHEMA_ID('dbo'); -- expected 33
 SELECT COUNT(*) AS foreignKeyCount
 FROM sys.foreign_keys WHERE schema_id = SCHEMA_ID('dbo');
 SELECT name AS viewName FROM sys.views WHERE schema_id = SCHEMA_ID('dbo');
@@ -783,8 +801,12 @@ APPLICATION SERVICE / TRANSACTION RULES (NOT AUTOMATICALLY ENFORCED BY THIS DDL)
 7. REVIEWS / RETURNS / REQUESTS:
    - Review requires an authenticated Buyer matching OrderTable.buyerId, matching
      ProductId in OrderItem (non-null), and ShippingInfo.status='DELIVERED'.
-   - SellerFeedback must match Order.sellerId and buyerId=Order.buyerId and require
-     delivered shipping. Independent Listing still supports SellerFeedback.
+   - SellerFeedback is Buyer-to-Seller and must match Order.sellerId and
+     buyerId=Order.buyerId with delivered shipping.
+   - BuyerFeedback is read-only in the Buyer module. It represents positive
+     Seller-to-Buyer feedback and must match Order.sellerId and Order.buyerId
+     with delivered shipping. Creation belongs to the Seller module.
+   - Independent Listing still supports SellerFeedback and BuyerFeedback.
    - CancellationRequest/ReturnRequest requestedBy must own the Order; returns
      may reference only items of THAT order; return qty <= purchased qty and
      cumulative active return quantity must not exceed purchased quantity.

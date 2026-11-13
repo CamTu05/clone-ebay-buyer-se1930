@@ -57,6 +57,8 @@ public partial class OrderTable
 
     public DateTime updatedAt { get; set; }
 
+    public virtual BuyerFeedback? BuyerFeedback { get; set; }
+
     public virtual ICollection<CancellationRequest> CancellationRequests { get; set; } = new List<CancellationRequest>();
 
     public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();

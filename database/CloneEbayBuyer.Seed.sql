@@ -159,8 +159,22 @@ BEGIN TRY
     SET @j+=1;
    END;
    SET @i+=1;
-  END;
-  INSERT dbo.CheckoutGroup(guestEmail,subtotal,discountAmount,shippingFee,totalAmount,status,createdAt,paymentDeadline)
+   END;
+   DECLARE @buyerA int=(SELECT id FROM dbo.[User] WHERE email=N'seed.buyer01@example.test');
+   DECLARE @buyerB int=(SELECT id FROM dbo.[User] WHERE email=N'seed.buyer02@example.test');
+   DECLARE @buyerC int=(SELECT id FROM dbo.[User] WHERE email=N'seed.buyer03@example.test');
+   IF @buyerA IS NULL OR @buyerB IS NULL OR @buyerC IS NULL THROW 51003,N'Buyer feedback seed users are missing',1;
+   ;WITH eligible AS (
+    SELECT o.id,o.buyerId,o.sellerId,ROW_NUMBER() OVER(PARTITION BY o.buyerId ORDER BY o.orderDate,o.id) rn
+    FROM dbo.OrderTable o JOIN dbo.ShippingInfo si ON si.orderId=o.id
+    WHERE o.buyerId IN(@buyerA,@buyerB) AND o.status=N'COMPLETED' AND si.status=N'DELIVERED'
+   )
+   INSERT dbo.BuyerFeedback(orderId,buyerId,sellerId,comment,createdAt)
+   SELECT id,buyerId,sellerId,CASE WHEN buyerId=@buyerA AND rn=1 THEN N'Great buyer, prompt payment. Thank you!' WHEN buyerId=@buyerA AND rn=2 THEN N'Excellent transaction, highly recommended buyer.' WHEN buyerId=@buyerA AND rn=3 THEN N'Fast payment and smooth transaction. Thank you.' ELSE N'Pleasure doing business with this buyer.' END,DATEADD(day,-rn,@now)
+   FROM eligible WHERE (buyerId=@buyerA AND rn<=3) OR (buyerId=@buyerB AND rn=1);
+   IF (SELECT COUNT(*) FROM dbo.BuyerFeedback WHERE buyerId=@buyerA)<>3 OR (SELECT COUNT(*) FROM dbo.BuyerFeedback WHERE buyerId=@buyerB)<>1 OR EXISTS(SELECT 1 FROM dbo.BuyerFeedback WHERE buyerId=@buyerC)
+    THROW 51004,N'Buyer feedback seed counts are invalid',1;
+   INSERT dbo.CheckoutGroup(guestEmail,subtotal,discountAmount,shippingFee,totalAmount,status,createdAt,paymentDeadline)
   VALUES(N'seed.guest@example.test',500000,0,30000,530000,N'PENDING',@now,DATEADD(day,1,@now));
   SET @group=SCOPE_IDENTITY();
   INSERT dbo.GuestCheckoutAccess(checkoutGroupId,tokenHash,expiresAt,createdAt)
