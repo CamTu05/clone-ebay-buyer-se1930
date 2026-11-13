@@ -38,3 +38,19 @@ npm run test:e2e
 E2E and SQL smoke scripts must use an isolated seeded test database/API. Required environment variables and results are documented in docs/11-buyer-completion.md. Performance plans are in performance-tests; rolling deployment instructions are in infrastructure/k8s.
 
 For Docker, copy .env.example to .env, replace the JWT key/database credentials, and run docker compose up --build. The one-shot db-init service bootstraps a fresh CloneEbayBuyer and applies the upgrade; existing rows are preserved. Remote CI/container/Kubernetes execution is separate from local build verification.
+
+## Load testing, rate limiting and load balancing
+
+The isolated demonstration stack runs JMeter through Nginx and two .NET API replicas:
+
+```powershell
+./scripts/start-loadtest-stack.ps1
+./scripts/test-nginx-load-balance.ps1
+./scripts/test-nginx-rate-limit.ps1
+./scripts/run-jmeter-load.ps1 -Profile smoke
+```
+
+Port 8080 verifies Nginx rate limiting; port 8081 uses the same load-balanced upstream
+without request-rate limiting for capacity measurement. See
+[performance-tests/README.md](performance-tests/README.md) for load/stress/spike/soak
+profiles and result interpretation.
