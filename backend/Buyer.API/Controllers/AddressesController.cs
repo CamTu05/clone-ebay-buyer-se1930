@@ -27,6 +27,7 @@ public sealed class AddressesController(IAddressService service) : ControllerBas
     public async Task<IActionResult> ListAsync(CancellationToken ct)
         => Ok(ApiEnvelope<IReadOnlyList<AddressResponse>>.Succeeded(await service.ListAsync(UserId, ct)));
 
+    [AllowAnonymous]
     [HttpGet("countries")]
     [ProducesResponseType<ApiEnvelope<IReadOnlyList<CountryResponse>>>(StatusCodes.Status200OK)]
     public IActionResult Countries() => Ok(ApiEnvelope<IReadOnlyList<CountryResponse>>.Succeeded(service.Countries));

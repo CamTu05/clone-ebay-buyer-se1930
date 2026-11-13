@@ -22,8 +22,8 @@ builder.Services.AddControllers().ConfigureApiBehaviorOptions(options =>
     {
         var errors = context.ModelState
             .Where(entry => entry.Value?.Errors.Count > 0)
-            .SelectMany(entry => entry.Value!.Errors.Select(_ =>
-                new ApiError("VALIDATION_ERROR", entry.Key)))
+            .SelectMany(entry => entry.Value!.Errors.Select(e =>
+                new ApiError("VALIDATION_ERROR", string.IsNullOrEmpty(e.ErrorMessage) ? entry.Key : $"{entry.Key}: {e.ErrorMessage} {e.Exception?.Message}".Trim())))
             .ToArray();
         return new BadRequestObjectResult(
             new ApiEnvelope<object>(false, "Validation failed", null, errors));

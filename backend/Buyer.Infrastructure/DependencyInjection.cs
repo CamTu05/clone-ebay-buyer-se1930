@@ -81,6 +81,7 @@ public static class DependencyInjection
         services.AddScoped<IListingCatalogRepository, Buyer.Infrastructure.Repositories.ListingCatalog.ListingCatalogRepository>();
         services.AddScoped<IListingCatalogService, ListingCatalogService>();
         services.Configure<Email.SmtpOptions>(configuration.GetSection(Email.SmtpOptions.SectionName));
+        services.Configure<UrgencyBadgeOptions>(configuration.GetSection(UrgencyBadgeOptions.SectionName));
         services.AddScoped<IEmailSender, Email.SmtpEmailSender>();
         services.AddScoped<IEmailVerificationService, Email.EmailVerificationService>();
         return services;

@@ -10,6 +10,14 @@ export interface ProductListing {
   price: number | null
   seller: { id: number; username: string; avatarUrl: string | null; storeName: string | null }
 }
+export interface UrgencyBadgeInfo {
+  show: boolean
+  text: string
+  inCartCount: number
+  soldCount: number
+  badgeType: 'CART' | 'SOLD' | 'BOTH' | null
+}
+
 export interface ProductDetail {
   productId: number
   name: string
@@ -18,6 +26,7 @@ export interface ProductDetail {
   condition: string | null
   images: ProductImage[]
   listings: ProductListing[]
+  urgencyBadge?: UrgencyBadgeInfo | null
 }
 
 interface Envelope<T> { success: boolean; message: string; data: T }
