@@ -13,6 +13,7 @@ public sealed class AccountLifecycleController(AccountLifecycleService service, 
     public sealed record Registration([Required, EmailAddress, StringLength(255)] string Email, [Required, StringLength(100)] string Username, [Required, StringLength(128, MinimumLength = 10)] string Password);
     public sealed record EmailInput([Required, EmailAddress, StringLength(255)] string Email);
     public sealed record TokenInput([Required, StringLength(64)] string Token);
+    public sealed record VerifyEmailInput([StringLength(64)] string? Token, [StringLength(64)] string? Code, [EmailAddress, StringLength(255)] string? Email);
     public sealed record ResetInput([Required, StringLength(64)] string Token, [Required, StringLength(128, MinimumLength = 10)] string Password);
     public sealed record ChangeInput([Required, StringLength(128)] string CurrentPassword, [Required, StringLength(128, MinimumLength = 10)] string Password);
     object OkData() => ApiEnvelope<object>.Succeeded(new { message = "Request processed. Check your email for the next step." });
@@ -23,9 +24,15 @@ public sealed class AccountLifecycleController(AccountLifecycleService service, 
     [HttpPost("forgot-password")]
     public async Task<object> Forgot(EmailInput r, CancellationToken ct) { await service.Request(r.Email, true, ct); return OkData(); }
     [HttpPost("verify-email")]
-    public async Task<object> Verify(TokenInput r, CancellationToken ct) { await service.Consume(r.Token, null, ct); return OkData(); }
+    public async Task<object> Verify(VerifyEmailInput r, CancellationToken ct)
+    {
+        var code = r.Code ?? r.Token;
+        if (string.IsNullOrWhiteSpace(code)) throw new Buyer.Application.BuyerRuleException("TOKEN_INVALID", "Vui lòng nhập mã xác thực gồm 6 chữ số.", 400);
+        await service.Consume(code, r.Email, null, ct);
+        return ApiEnvelope<object>.Succeeded(new { message = "Email verified successfully." });
+    }
     [HttpPost("reset-password")]
-    public async Task<object> Reset(ResetInput r, CancellationToken ct) { await service.Consume(r.Token, r.Password, ct); return OkData(); }
+    public async Task<object> Reset(ResetInput r, CancellationToken ct) { await service.Consume(r.Token, null, r.Password, ct); return OkData(); }
     [Authorize(Roles = "BUYER"), HttpPost("change-password")]
     public async Task<object> Change(ChangeInput r, CancellationToken ct) { await service.Change(int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!), r.CurrentPassword, r.Password, ct); return OkData(); }
     [Authorize(Roles = "BUYER"), HttpPost("logout")]

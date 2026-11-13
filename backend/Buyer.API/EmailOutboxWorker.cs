@@ -23,7 +23,10 @@ public sealed class EmailOutboxWorker(IServiceScopeFactory scopes, IConfiguratio
                     row.attempts++;
                     using var client = new SmtpClient(config["Smtp:Host"], config.GetValue("Smtp:Port", 587)) { EnableSsl = config.GetValue("Smtp:EnableSsl", true) };
                     if (config["Smtp:Username"] is { Length: > 0 } username) client.Credentials = new NetworkCredential(username, config["Smtp:Password"]);
-                    using var message = new MailMessage(config["Smtp:From"] ?? "buyer@example.test", row.recipient, row.subject, row.body);
+                    using var message = new MailMessage(config["Smtp:From"] ?? "buyer@example.test", row.recipient, row.subject, row.body)
+                    {
+                        IsBodyHtml = row.body.TrimStart().StartsWith('<')
+                    };
                     try { await client.SendMailAsync(message, ct); row.sentAt = DateTime.UtcNow; } catch (Exception e) when (e is SmtpException or InvalidOperationException) { logger.LogWarning("Email attempt failed for outbox message {Id}", row.id); }
                     await db.SaveChangesAsync(ct); await tx.CommitAsync(ct);
                 }

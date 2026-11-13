@@ -7,6 +7,7 @@ import { createBrowserRouter } from 'react-router-dom'
 import { LoginPage } from '../features/authentication/LoginPage'
 import { ProtectedRoute } from '../features/authentication/ProtectedRoute'
 import { CatalogPage } from '../features/catalog/CatalogPage'
+import { AdvancedSearchPage } from '../features/catalog/AdvancedSearchPage'
 import { WatchlistPage } from '../features/watchlist/WatchlistPage'
 import { BuyerInfoPage } from './BuyerInfoPage'
 import { AppLayout } from './AppLayout'
@@ -25,6 +26,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <HomePage /> },
       { path: 'catalog', element: <CatalogPage /> },
+      { path: 'advanced-search', element: <AdvancedSearchPage /> },
       { path: 'products/:productId', element: <ProductDetailPage /> },
       ...(['verify-email','forgot-password','reset-password','resend-verification'] as const).map(mode=>({path:mode,element:<AccountFlowPage key={mode} mode={mode}/>})),
       ...(import.meta.env.DEV ? [{path:'dev-mailbox',element:<DevMailboxPage/>}] : []),
