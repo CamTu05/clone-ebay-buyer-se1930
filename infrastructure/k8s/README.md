@@ -3,7 +3,7 @@
 `buyer-demo.yaml` supplies two replicas, maxUnavailable=0, readiness/live/startup probes, graceful drain and an API PodDisruptionBudget. Configure image registry tags, namespace, ingress/TLS, database and secrets for the target cluster before applying.
 
 1. Build/push the API and web images, then replace their image tags in the manifest.
-2. Bootstrap/upgrade the database using `database/CloneEbayBuyer.sql` (fresh databases only), demo seed if wanted, and `database/upgrades/001-buyer-completion.sql`.
+2. Bootstrap a fresh database using `database/CloneEbayBuyer.sql` and optionally `database/CloneEbayBuyer.Seed.sql`.
 3. Create Secret `buyer-secrets` with keys `connection-string` and `jwt-key`. Keep the same JWT key across replicas. Do not put real values in Git.
 4. Configure `Frontend__PublicUrl`, allowed CORS origins, SMTP and Google OAuth as appropriate. OAuth across replicas additionally requires shared persistent ASP.NET Data Protection keys or correctly configured sticky routing; the baseline does not provision cluster storage.
 5. Apply the manifest and watch `kubectl rollout status deployment/buyer-api`.

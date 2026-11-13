@@ -8,7 +8,7 @@ import { Icon } from '../shared/components/Icon'
 
 const img = (file: string) => `/images/ebay/${file}.webp`
 const technology = [
-  ['Laptops', 'laptop', 's-l500'], ['Computer parts', 'computer', 's-l500(1)'], ['Smartphones', 'phone', 's-l500(2)'],
+  ['Laptops', 'Dell Latitude', 's-l500'], ['Computer parts', 'computer', 's-l500(1)'], ['Smartphones', 'Samsung Galaxy', 's-l500(2)'],
   ['Enterprise networking', 'computer', 's-l500(3)'], ['Tablets and eBooks', 'tablet', 's-l500(4)'], ['Storage and blank media', 'storage', 's-l500(5)'], ['Lenses and filters', 'camera', 's-l500(6)'],
 ]
 const trending = [

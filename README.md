@@ -7,7 +7,7 @@ Implementation and test evidence: [Buyer completion](docs/11-buyer-completion.md
 ## Local setup
 
 1. Configure ConnectionStrings:BuyerDatabase for SQL Server. Development defaults to .\SQLEXPRESS and CloneEbayBuyer. Environment variables and User Secrets override JSON settings.
-2. For an existing current-schema database, run database/upgrades/001-buyer-completion.sql using sqlcmd -I -b. For a fresh database, run database/CloneEbayBuyer.sql, optionally the demo seed/password scripts, then the upgrade. The CREATE script aborts if the database exists.
+2. For a fresh database, run database/CloneEbayBuyer.sql and optionally database/CloneEbayBuyer.Seed.sql. The schema script contains the complete current schema and aborts if the database already exists.
 3. Configure Jwt:SigningKey (32+ random characters) using User Secrets or environment variables.
 4. Run the API and frontend:
 

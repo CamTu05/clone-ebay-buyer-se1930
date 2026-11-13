@@ -10,7 +10,7 @@ Assess the initialized Buyer Module against the official requirements, architect
 - `docs/02_Architecture_Conventions_Clone_eBay.docx`
 - `docs/03_Database_Design_Clone_eBay.docx`
 - `docs/04_API_Contract_Clone_eBay_Buyer.md`
-- `database/clone_ebay_complete_schema_v2.sql`
+- `database/CloneEbayBuyer.sql`
 
 The DOCX contents were read from their WordprocessingML document XML. The SQL script was inspected only and was not executed.
 

@@ -69,7 +69,39 @@ public sealed class BuyerCompletionController(BuyerSchemaContext db, BuyerWorkfl
         db.SellerFeedbacks.Add(new SellerFeedback { orderId = id, buyerId = Uid, sellerId = order.sellerId, feedbackType = r.Type, comment = r.Comment }); await db.SaveChangesAsync(ct); await tx.CommitAsync(ct); return Success(new { success = true });
     }
     [HttpGet("sellers/{id:int}/feedback")]
-    public async Task<object> FeedbackList(int id, CancellationToken ct) => Success(await db.SellerFeedbacks.AsNoTracking().Where(x => x.sellerId == id).OrderByDescending(x => x.id).Take(100).Select(x => new { x.id, x.feedbackType, x.comment, x.createdAt }).ToListAsync(ct));
+    public async Task<object> FeedbackList(int id, [FromQuery] int? listingId, [FromQuery] string? type, CancellationToken ct)
+    {
+        if (id <= 0 || listingId <= 0) throw new BuyerRuleException("FEEDBACK_QUERY_INVALID", "Seller and listing IDs must be positive.", 400);
+        var normalizedType = string.IsNullOrWhiteSpace(type) ? null : type.Trim().ToUpperInvariant();
+        if (normalizedType is not null and not ("POSITIVE" or "NEUTRAL" or "NEGATIVE")) throw new BuyerRuleException("FEEDBACK_TYPE_INVALID", "Feedback type must be POSITIVE, NEUTRAL or NEGATIVE.", 400);
+        var scope = db.SellerFeedbacks.AsNoTracking().Where(x => x.sellerId == id);
+        if (listingId.HasValue) scope = scope.Where(x => x.order.OrderItems.Any(item => item.listingId == listingId.Value));
+        var counts = await scope.GroupBy(_ => 1).Select(group => new
+        {
+            total = group.Count(),
+            positive = group.Count(x => x.feedbackType == "POSITIVE"),
+            neutral = group.Count(x => x.feedbackType == "NEUTRAL"),
+            negative = group.Count(x => x.feedbackType == "NEGATIVE")
+        }).SingleOrDefaultAsync(ct);
+        if (normalizedType is not null) scope = scope.Where(x => x.feedbackType == normalizedType);
+        var items = await scope.OrderByDescending(x => x.createdAt).ThenByDescending(x => x.id).Take(100).Select(x => new
+        {
+            x.id,
+            x.feedbackType,
+            x.comment,
+            x.createdAt,
+            buyer = x.buyer.username,
+            orderItems = x.order.OrderItems.Select(item => new { item.listingId, item.productTitle })
+        }).ToListAsync(ct);
+        var total = counts?.total ?? 0;
+        var positive = counts?.positive ?? 0;
+        return Success(new
+        {
+            items,
+            counts = new { total, positive, neutral = counts?.neutral ?? 0, negative = counts?.negative ?? 0 },
+            positivePercentage = total == 0 ? (decimal?)null : Math.Round(positive * 100m / total, 1)
+        });
+    }
     [Authorize(Roles = "BUYER"), HttpGet("me/auctions")]
     public async Task<object> MyAuctions(CancellationToken ct) { await service.RequireBuyer(Uid, ct); return Success(await db.Auctions.AsNoTracking().Where(x => x.Bids.Any(b => b.bidderId == Uid)).OrderByDescending(x => x.id).Take(100).Select(x => new { x.id, x.listingId, x.listing.productId, x.listing.title, x.currentPrice, x.endTime, x.status, x.winningPrice, x.resolvedAt, isLeading = x.highestBidderId == Uid, isWinner = x.winnerId == Uid, ownMaximum = x.Bids.Where(b => b.bidderId == Uid).Max(b => b.maximumBid), checkoutGroupId = x.listing.OrderItems.Where(i => i.order.buyerId == Uid && i.order.status != "CANCELLED").Select(i => (long?)i.order.checkoutGroupId).FirstOrDefault() }).ToListAsync(ct)); }
 }
