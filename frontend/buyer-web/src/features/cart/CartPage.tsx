@@ -2,6 +2,7 @@ import { useAuth } from '../authentication/useAuth'
 import { useLocalCart, mergeLocal } from './localCart'
 import { SavedCartPanel } from './SavedCartPanel'
 import { buyerPost } from '../buyerApi'
+import { notifyCartUpdated } from './cartStore'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ErrorMessage } from '../../shared/components/ErrorMessage'
@@ -28,7 +29,12 @@ function ServerCart() {
   useEffect(() => {
     const controller = new AbortController()
     getCart(controller.signal)
-      .then(value => { if (!controller.signal.aborted) setCart(value) })
+      .then(value => {
+        if (!controller.signal.aborted) {
+          setCart(value)
+          notifyCartUpdated()
+        }
+      })
       .catch((error: unknown) => {
         if (!controller.signal.aborted) setLoadError(cartErrorMessage(error))
       })
@@ -46,7 +52,9 @@ function ServerCart() {
     setBusyItemId(cartItemId)
     setItemErrors(current => ({ ...current, [cartItemId]: '' }))
     try {
-      setCart(await updateCartItem(cartItemId, quantity))
+      const updated = await updateCartItem(cartItemId, quantity)
+      setCart(updated)
+      notifyCartUpdated()
     } catch (error) {
       setItemErrors(current => ({ ...current, [cartItemId]: cartErrorMessage(error) }))
     } finally {
@@ -59,7 +67,9 @@ function ServerCart() {
     setBusyItemId(cartItemId)
     setItemErrors(current => ({ ...current, [cartItemId]: '' }))
     try {
-      setCart(await removeCartItem(cartItemId))
+      const updated = await removeCartItem(cartItemId)
+      setCart(updated)
+      notifyCartUpdated()
     } catch (error) {
       setItemErrors(current => ({ ...current, [cartItemId]: cartErrorMessage(error) }))
     } finally {
@@ -106,7 +116,7 @@ function ServerCart() {
             </div>
             <div className="cart-item-price">
               <p>{priceFormat.format(item.itemTotal)}</p>
-              <button className="text-link" disabled={busyItemId !== null} onClick={()=>{setBusyItemId(item.cartItemId);void buyerPost('/api/cart/items/'+item.cartItemId+'/save-for-later').then(()=>{retry();window.dispatchEvent(new Event('buyer:saved-cart'))}).catch(e=>setItemErrors(current=>({...current,[item.cartItemId]:cartErrorMessage(e)}))).finally(()=>setBusyItemId(null))}}>Save for later</button><button className="cart-item-remove" aria-label={`Remove ${item.title}`} disabled={busyItemId !== null} type="button" onClick={() => remove(item.cartItemId)}>Remove</button>
+              <button className="text-link" disabled={busyItemId !== null} onClick={()=>{setBusyItemId(item.cartItemId);void buyerPost('/api/cart/items/'+item.cartItemId+'/save-for-later').then(()=>{retry();notifyCartUpdated();window.dispatchEvent(new Event('buyer:saved-cart'))}).catch(e=>setItemErrors(current=>({...current,[item.cartItemId]:cartErrorMessage(e)}))).finally(()=>setBusyItemId(null))}}>Save for later</button><button className="cart-item-remove" aria-label={`Remove ${item.title}`} disabled={busyItemId !== null} type="button" onClick={() => remove(item.cartItemId)}>Remove</button>
             </div>
           </div>
         </article>)}

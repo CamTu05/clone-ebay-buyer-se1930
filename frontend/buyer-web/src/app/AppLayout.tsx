@@ -3,6 +3,7 @@ import type { FormEvent } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../features/authentication/useAuth'
 import { useWatchlist } from '../features/watchlist/watchlistStore'
+import { useCartCount, syncServerCart } from '../features/cart/cartStore'
 import { Icon } from '../shared/components/Icon'
 
 const categories = ['Electronics', 'Motors', 'Fashion', 'Collectibles and art', 'Sports', 'Health and beauty', 'Industrial equipment', 'Home and garden']
@@ -42,7 +43,12 @@ export function AppLayout() {
   const location = useLocation()
   const navigate = useNavigate()
   const { items } = useWatchlist()
+  const { count: cartCount, bump: cartBump } = useCartCount()
   const [menu, setMenu] = useState<string | null>(null)
+
+  useEffect(() => {
+    void syncServerCart()
+  }, [isAuthenticated])
   const headerRef = useRef<HTMLElement>(null)
   const authPaths = ['/login', '/register', '/verify-email', '/forgot-password', '/reset-password', '/resend-verification', '/change-password']
   const simple = authPaths.includes(location.pathname)
@@ -75,7 +81,21 @@ export function AppLayout() {
           <div className="utility-right"><Link className="ship-link" to="/addresses"><Icon name="truck" size={18}/> Ship to Vietnam</Link><Link className="sell-link" to="/help">Sell <Icon name="chevron" size={12}/></Link>
             <div className="menu-anchor"><button className="utility-menu" aria-expanded={activeMenu === 'watchlist'} onClick={() => toggle('watchlist')}>Watchlist <Icon name="chevron" size={12}/></button>{activeMenu === 'watchlist' && <div className="header-popover watch-popover"><h2>Your Watchlist</h2><p>{items.length ? `${items.length} saved ${items.length === 1 ? 'item' : 'items'} on this device.` : 'Keep track of the items you love.'}</p><Link className="pill primary" to="/watchlist">View Watchlist</Link></div>}</div>
             <div className="menu-anchor"><button className="utility-menu" aria-expanded={activeMenu === 'account'} onClick={() => toggle('account')}>My eBay <Icon name="chevron" size={12}/></button>{activeMenu === 'account' && <nav className="header-popover account-popover" aria-label="My eBay menu"><Link to="/orders">Summary</Link><Link to="/orders">Purchase history</Link><Link to="/watchlist">Watchlist</Link><Link to="/catalog?type=AUCTION">Bids & offers</Link><Link to="/profile">Account settings</Link><Link to="/addresses">Shipping addresses</Link></nav>}</div>
-            <Link className="icon-button" to="/notifications" aria-label="Notifications"><Icon name="bell"/></Link><Link className="icon-button" to="/cart" aria-label="Shopping cart"><Icon name="cart" size={24}/></Link>
+            <Link className="icon-button" to="/notifications" aria-label="Notifications"><Icon name="bell"/></Link>
+            <Link
+              className="icon-button header-cart-button"
+              to="/cart"
+              aria-label={`Shopping cart${cartCount > 0 ? `, ${cartCount} items` : ''}`}
+            >
+              <span className="header-cart-icon-wrapper">
+                <Icon name="cart" size={24}/>
+                {cartCount > 0 && (
+                  <span className={`header-cart-badge ${cartBump ? 'bump' : ''}`}>
+                    {cartCount > 99 ? '99+' : cartCount}
+                  </span>
+                )}
+              </span>
+            </Link>
           </div>
         </div></div>
         <div className="site-width search-row"><Link to="/" aria-label="eBay Clone home"><img className="ebay-logo" src="/images/ebay/logo.svg" alt="eBay"/></Link><div className="menu-anchor category-anchor"><button className="category-trigger" aria-expanded={activeMenu === 'categories'} onClick={() => toggle('categories')}>Shop by<br/>category <Icon name="chevron" size={14}/></button>{activeMenu === 'categories' && <div className="header-popover category-menu"><h2>Shop by category</h2><div>{categories.map((name, i) => <Link key={name} to={`/catalog?q=${keywords[i]}`}>{name}<Icon name="arrow" size={16}/></Link>)}</div><Link className="text-link" to="/catalog">See all items</Link></div>}</div><SearchBox key={location.search}/></div>
