@@ -29,7 +29,11 @@ function SearchBox() {
   }
   return <form className="global-search" role="search" onSubmit={search}>
     <div className="search-field"><Icon name="search" size={20}/><label className="sr-only" htmlFor="global-query">Search for anything</label><input id="global-query" type="search" placeholder="Search for anything" value={query} onChange={event => setQuery(event.target.value)}/><Link className="image-search" to="/help" aria-label="Search help"><Icon name="camera" size={20}/></Link><label className="sr-only" htmlFor="search-category">Search category</label><select id="search-category" value={category} onChange={event => setCategory(event.target.value)}><option value="">All Categories</option>{categories.map(name => <option key={name}>{name}</option>)}</select></div>
-    <button className="search-submit" type="submit">Search</button><Link className="advanced-link" to="/catalog">Advanced</Link>
+    <button className="search-submit" type="submit">Search</button>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', alignItems: 'flex-start', flexShrink: 0 }}>
+      <Link className="advanced-link" to="/catalog">Advanced</Link>
+      <Link className="advanced-link" to="/advanced-search" style={{ color: '#0064d2', fontWeight: 600 }}>Advanced 2</Link>
+    </div>
   </form>
 }
 
@@ -40,11 +44,12 @@ export function AppLayout() {
   const { items } = useWatchlist()
   const [menu, setMenu] = useState<string | null>(null)
   const headerRef = useRef<HTMLElement>(null)
-  const simple = location.pathname === '/login'
+  const authPaths = ['/login', '/register', '/verify-email', '/forgot-password', '/reset-password', '/resend-verification', '/change-password']
+  const simple = authPaths.includes(location.pathname)
 
   useEffect(() => {
     window.scrollTo({ top: 0 })
-    const headings: Record<string, string> = { '/': 'Electronics, Fashion, Collectibles & More', '/catalog': 'Shop and find your next great item', '/login': 'Sign in', '/cart': 'Shopping cart', '/watchlist': 'Watchlist', '/profile': 'My eBay', '/addresses': 'Shipping addresses', '/checkout': 'Checkout', '/orders': 'Purchase history' }
+    const headings: Record<string, string> = { '/': 'Electronics, Fashion, Collectibles & More', '/catalog': 'Shop and find your next great item', '/advanced-search': 'Advanced Search', '/login': 'Sign in', '/register': 'Create an account', '/verify-email': 'Verify your email', '/forgot-password': 'Reset your password', '/reset-password': 'Choose a new password', '/change-password': 'Change password', '/resend-verification': 'Resend verification', '/cart': 'Shopping cart', '/watchlist': 'Watchlist', '/profile': 'My eBay', '/addresses': 'Shipping addresses', '/checkout': 'Checkout', '/orders': 'Purchase history' }
     document.title = `${headings[location.pathname] ?? 'Buyer'} | eBay Clone`
   }, [location.pathname, location.search])
 

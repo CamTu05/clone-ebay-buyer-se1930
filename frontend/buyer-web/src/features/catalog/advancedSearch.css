@@ -1,0 +1,383 @@
+/* Advanced Search Page Styles - eBay Theme */
+.eb-advanced-search {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 16px 60px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: #191919;
+}
+
+.eb-adv-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.eb-adv-header h1 {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0;
+  color: #191919;
+}
+
+.eb-adv-header p {
+  color: #707070;
+  font-size: 14px;
+  margin: 4px 0 0;
+}
+
+.eb-adv-actions-top {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+/* Two-column layout */
+.eb-adv-layout {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 36px;
+  align-items: start;
+}
+
+/* Sidebar Navigation Tabs */
+.eb-adv-nav {
+  position: sticky;
+  top: 24px;
+  background: #f7f7f7;
+  border-radius: 12px;
+  padding: 12px;
+  border: 1px solid #e5e5e5;
+}
+
+.eb-adv-nav h2 {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #707070;
+  margin: 8px 12px 12px;
+  font-weight: 600;
+}
+
+.eb-adv-nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.eb-adv-nav-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: #191919;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.eb-adv-nav-item:hover {
+  background: #eaeaea;
+  color: #0064d2;
+}
+
+.eb-adv-nav-item.is-active {
+  background: #0064d2;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* Main Form Area */
+.eb-adv-main {
+  background: #ffffff;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  padding: 28px 32px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+}
+
+.eb-adv-section {
+  padding: 24px 0;
+  border-bottom: 1px solid #e5e5e5;
+  scroll-margin-top: 24px;
+}
+
+.eb-adv-section:first-child {
+  padding-top: 0;
+}
+
+.eb-adv-section:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.eb-adv-section-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0 0 16px;
+  color: #191919;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.eb-adv-section-desc {
+  font-size: 13px;
+  color: #707070;
+  margin: -10px 0 16px;
+}
+
+/* Form Groups and Inputs */
+.eb-adv-row {
+  margin-bottom: 16px;
+}
+
+.eb-adv-row:last-child {
+  margin-bottom: 0;
+}
+
+.eb-adv-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #191919;
+}
+
+.eb-adv-input,
+.eb-adv-select {
+  width: 100%;
+  max-width: 520px;
+  height: 42px;
+  padding: 8px 14px;
+  border: 1px solid #767676;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #191919;
+  background-color: #ffffff;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.eb-adv-input:focus,
+.eb-adv-select:focus {
+  outline: none;
+  border-color: #0064d2;
+  box-shadow: 0 0 0 3px rgba(0, 100, 210, 0.2);
+}
+
+.eb-adv-input:disabled,
+.eb-adv-select:disabled {
+  background-color: #f5f5f5;
+  border-color: #cccccc;
+  color: #888888;
+  cursor: not-allowed;
+}
+
+/* Checkbox & Radio styling */
+.eb-adv-checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  margin-top: 8px;
+}
+
+.eb-adv-checkbox-label,
+.eb-adv-radio-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #191919;
+  cursor: pointer;
+  user-select: none;
+}
+
+.eb-adv-checkbox-label input[type="checkbox"],
+.eb-adv-radio-label input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #0064d2;
+  cursor: pointer;
+}
+
+.eb-adv-checkbox-label.is-disabled {
+  color: #999999;
+  cursor: not-allowed;
+}
+
+/* Dual input fields (Min - Max) */
+.eb-adv-range-inputs {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  max-width: 520px;
+}
+
+.eb-adv-range-field {
+  flex: 1;
+  min-width: 140px;
+}
+
+.eb-adv-range-field span {
+  display: block;
+  font-size: 12px;
+  color: #707070;
+  margin-bottom: 4px;
+}
+
+.eb-adv-range-divider {
+  font-size: 14px;
+  color: #707070;
+  margin-top: 18px;
+}
+
+.eb-adv-swap-btn {
+  margin-top: 18px;
+  background: none;
+  border: 1px solid #0064d2;
+  color: #0064d2;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.eb-adv-swap-btn:hover {
+  background: #eef3fa;
+}
+
+/* Buttons */
+.eb-adv-btn-primary {
+  height: 44px;
+  padding: 0 28px;
+  border-radius: 22px;
+  background-color: #0064d2;
+  color: #ffffff;
+  border: none;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background-color 0.15s;
+}
+
+.eb-adv-btn-primary:hover {
+  background-color: #004fb0;
+}
+
+.eb-adv-btn-primary:disabled {
+  background-color: #a0c2eb;
+  cursor: not-allowed;
+}
+
+.eb-adv-btn-secondary {
+  height: 44px;
+  padding: 0 20px;
+  border-radius: 22px;
+  background-color: transparent;
+  color: #0064d2;
+  border: 1px solid #0064d2;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.eb-adv-btn-secondary:hover {
+  background-color: #f0f4fa;
+}
+
+/* Validation Alert */
+.eb-adv-alert {
+  background-color: #fdf2f2;
+  border: 1px solid #f8b4b4;
+  color: #c81e1e;
+  padding: 14px 18px;
+  border-radius: 8px;
+  font-size: 14px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.eb-adv-inline-error {
+  color: #c81e1e;
+  font-size: 12px;
+  margin-top: 6px;
+  display: block;
+}
+
+/* Bottom Action Bar */
+.eb-adv-actions-bottom {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding-top: 28px;
+  margin-top: 24px;
+  border-top: 1px solid #e5e5e5;
+}
+
+/* Minimalist Item Number Form */
+.eb-adv-item-number-box {
+  background: #ffffff;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  padding: 36px 32px;
+  max-width: 650px;
+}
+
+.eb-adv-item-number-box h2 {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0 0 8px;
+}
+
+.eb-adv-item-number-box p {
+  color: #707070;
+  font-size: 14px;
+  margin: 0 0 24px;
+}
+
+/* Responsive */
+@media (max-width: 860px) {
+  .eb-adv-layout {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .eb-adv-nav {
+    position: static;
+  }
+
+  .eb-adv-nav ul {
+    flex-direction: row;
+    overflow-x: auto;
+  }
+
+  .eb-adv-nav-item {
+    white-space: nowrap;
+  }
+
+  .eb-adv-main {
+    padding: 20px 16px;
+  }
+}
+
