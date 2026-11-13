@@ -15,7 +15,7 @@
 .account-content{min-width:0;padding-bottom:48px}
 .account-section-title{font-size:24px;line-height:1.25;font-weight:700;margin:0 0 8px}
 .account-description{font-size:14px;line-height:1.6;color:#707070}
-.account-panel{border:1px solid #d5d9dd;border-radius:12px;background:#fff;overflow:hidden}
+.account-panel{border:1px solid #d5d9dd;border-radius:12px;background:#fff;overflow:hidden}.order-card{scroll-margin-top:24px}.order-card-selected{border-color:#3665f3;box-shadow:0 0 0 2px #3665f3}
 .account-profile-top{display:flex;align-items:center;gap:24px;padding:24px 28px;flex-wrap:wrap}
 .account-profile-top h2{font-size:22px;font-weight:700;margin-bottom:5px}
 .account-profile-top>button{margin-left:auto}

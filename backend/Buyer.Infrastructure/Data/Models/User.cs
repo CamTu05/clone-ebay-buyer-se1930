@@ -37,6 +37,10 @@ public partial class User
 
     public virtual ICollection<Bid> Bids { get; set; } = new List<Bid>();
 
+    public virtual ICollection<BuyerFeedback> BuyerFeedbackbuyers { get; set; } = new List<BuyerFeedback>();
+
+    public virtual ICollection<BuyerFeedback> BuyerFeedbacksellers { get; set; } = new List<BuyerFeedback>();
+
     public virtual ICollection<CancellationRequest> CancellationRequests { get; set; } = new List<CancellationRequest>();
 
     public virtual Cart? Cart { get; set; }
@@ -54,6 +58,8 @@ public partial class User
     public virtual ICollection<OrderTable> OrderTablebuyers { get; set; } = new List<OrderTable>();
 
     public virtual ICollection<OrderTable> OrderTablesellers { get; set; } = new List<OrderTable>();
+
+    public virtual ICollection<ReturnPolicy> ReturnPolicies { get; set; } = new List<ReturnPolicy>();
 
     public virtual ICollection<ReturnRequest> ReturnRequests { get; set; } = new List<ReturnRequest>();
 
