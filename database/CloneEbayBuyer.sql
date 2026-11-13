@@ -1,10 +1,10 @@
 /*
   Clone eBay - Buyer Module - Database V3 (SQL Server 2019+)
-  Fresh CREATE script. Database name: CloneEbayDB_V3.
-  IMPORTANT: This script does NOT drop CloneEbayDB_V2 or any existing database.
-  This script intentionally aborts if CloneEbayDB_V3 already exists.
+  Fresh CREATE script. Database name: CloneEbayBuyer.
+  IMPORTANT: This script does not drop any existing database.
+  This script intentionally aborts if CloneEbayBuyer already exists.
 
-  Scope: 30 tables, 1 listing view; account, catalog/listings, shopping cart,
+  Scope: 32 tables, 1 listing view; account, catalog/listings, shopping cart,
   auctions, multi-seller checkout, group-level mock payment, guest access,
   shipping, cancellation/return requests, feedback, notifications.
 
@@ -39,6 +39,8 @@ CREATE TABLE dbo.[User] (
     createdAt        DATETIME2(3) NOT NULL CONSTRAINT DF_User_CreatedAt DEFAULT SYSUTCDATETIME(),
     updatedAt        DATETIME2(3) NOT NULL CONSTRAINT DF_User_UpdatedAt DEFAULT SYSUTCDATETIME(),
     lastLoginAt      DATETIME2(3) NULL,
+    authVersion      INT NOT NULL CONSTRAINT DF_User_AuthVersion DEFAULT (0),
+    usernameChangedAt DATETIME2(3) NULL,
     CONSTRAINT UQ_User_Email UNIQUE (email),
     CONSTRAINT CK_User_Role CHECK (role IN (N'BUYER', N'SELLER', N'ADMIN')),
     CONSTRAINT CK_User_Status CHECK (accountStatus IN (N'ACTIVE', N'LOCKED', N'SUSPENDED', N'DELETED')),
@@ -363,6 +365,7 @@ CREATE TABLE dbo.CheckoutGroup (
     subtotal          DECIMAL(18,2) NOT NULL,
     discountAmount    DECIMAL(18,2) NOT NULL CONSTRAINT DF_CheckoutGroup_Discount DEFAULT (0),
     shippingFee       DECIMAL(18,2) NOT NULL CONSTRAINT DF_CheckoutGroup_Shipping DEFAULT (0),
+    taxAmount          DECIMAL(18,2) NOT NULL CONSTRAINT DF_Group_Tax DEFAULT (0),
     totalAmount       DECIMAL(18,2) NOT NULL,
     currency          NVARCHAR(10) NOT NULL CONSTRAINT DF_CheckoutGroup_Currency DEFAULT N'VND',
     status            NVARCHAR(20) NOT NULL CONSTRAINT DF_CheckoutGroup_Status DEFAULT N'PENDING',
@@ -377,8 +380,8 @@ CREATE TABLE dbo.CheckoutGroup (
         (buyerId IS NULL AND guestEmail IS NOT NULL AND LEN(LTRIM(RTRIM(guestEmail))) > 0)),
     CONSTRAINT CK_CheckoutGroup_Money CHECK (
         subtotal >= 0 AND discountAmount >= 0 AND discountAmount <= subtotal
-        AND shippingFee >= 0 AND totalAmount >= 0
-        AND totalAmount = subtotal - discountAmount + shippingFee),
+        AND shippingFee >= 0 AND taxAmount >= 0 AND totalAmount >= 0
+        AND totalAmount = subtotal - discountAmount + shippingFee + taxAmount),
     CONSTRAINT CK_CheckoutGroup_Status CHECK (status IN (N'PENDING', N'CONFIRMED', N'CANCELLED', N'EXPIRED')),
     CONSTRAINT CK_CheckoutGroup_Deadline CHECK (paymentDeadline IS NULL OR paymentDeadline > createdAt)
 );
@@ -409,6 +412,7 @@ CREATE TABLE dbo.OrderTable (
     subtotal             DECIMAL(18,2) NOT NULL,
     discountAmount       DECIMAL(18,2) NOT NULL CONSTRAINT DF_Order_Discount DEFAULT (0),
     shippingFee          DECIMAL(18,2) NOT NULL CONSTRAINT DF_Order_Shipping DEFAULT (0),
+    taxAmount             DECIMAL(18,2) NOT NULL CONSTRAINT DF_Order_Tax DEFAULT (0),
     totalAmount          DECIMAL(18,2) NOT NULL,
     currency             NVARCHAR(10) NOT NULL CONSTRAINT DF_Order_Currency DEFAULT N'VND',
     status               NVARCHAR(20) NOT NULL CONSTRAINT DF_Order_Status DEFAULT N'PLACED',
@@ -422,8 +426,8 @@ CREATE TABLE dbo.OrderTable (
     CONSTRAINT FK_Order_ShippingOption FOREIGN KEY (shippingOptionId) REFERENCES dbo.ShippingOption(id),
     CONSTRAINT CK_Order_Money CHECK (
         subtotal >= 0 AND discountAmount >= 0 AND discountAmount <= subtotal
-        AND shippingFee >= 0 AND totalAmount >= 0
-        AND totalAmount = subtotal - discountAmount + shippingFee),
+        AND shippingFee >= 0 AND taxAmount >= 0 AND totalAmount >= 0
+        AND totalAmount = subtotal - discountAmount + shippingFee + taxAmount),
     CONSTRAINT CK_Order_Status CHECK (status IN (N'PLACED', N'CONFIRMED', N'COMPLETED', N'CANCELLED')),
     CONSTRAINT CK_Order_Contact CHECK (
         LEN(LTRIM(RTRIM(shippingFullName))) > 0 AND LEN(LTRIM(RTRIM(shippingEmail))) > 0
@@ -645,6 +649,27 @@ GO
 CREATE INDEX IX_Notification_UserUnread ON dbo.Notification(userId, isRead, createdAt DESC);
 GO
 
+CREATE TABLE dbo.OperationReceipt (
+    scope         NVARCHAR(256) NOT NULL,
+    operationKey  NVARCHAR(100) NOT NULL,
+    requestHash   NVARCHAR(64) NOT NULL,
+    responseJson  NVARCHAR(MAX) NOT NULL,
+    createdAt     DATETIME2 NOT NULL CONSTRAINT DF_OperationReceipt_CreatedAt DEFAULT SYSUTCDATETIME(),
+    CONSTRAINT PK_OperationReceipt PRIMARY KEY (scope, operationKey)
+);
+GO
+
+CREATE TABLE dbo.EmailOutbox (
+    id         BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT PK_EmailOutbox PRIMARY KEY,
+    recipient  NVARCHAR(255) NOT NULL,
+    subject    NVARCHAR(200) NOT NULL,
+    body       NVARCHAR(MAX) NOT NULL,
+    createdAt  DATETIME2 NOT NULL CONSTRAINT DF_EmailOutbox_CreatedAt DEFAULT SYSUTCDATETIME(),
+    sentAt     DATETIME2 NULL,
+    attempts   INT NOT NULL CONSTRAINT DF_EmailOutbox_Attempts DEFAULT (0)
+);
+GO
+
 -- ===========================================================
 -- VIEW - includes stand-alone listings without Product
 -- ===========================================================
@@ -681,7 +706,7 @@ GO
 -- VERIFICATION
 -- ===========================================================
 SELECT COUNT(*) AS tableCount
-FROM sys.tables WHERE schema_id = SCHEMA_ID('dbo'); -- expected 30
+FROM sys.tables WHERE schema_id = SCHEMA_ID('dbo'); -- expected 32
 SELECT COUNT(*) AS foreignKeyCount
 FROM sys.foreign_keys WHERE schema_id = SCHEMA_ID('dbo');
 SELECT name AS viewName FROM sys.views WHERE schema_id = SCHEMA_ID('dbo');
