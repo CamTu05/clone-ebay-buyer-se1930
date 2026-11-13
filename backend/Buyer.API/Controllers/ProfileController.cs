@@ -26,6 +26,29 @@ public sealed class ProfileController(
         return Respond(result);
     }
 
+    [HttpGet("feedback")]
+    [ProducesResponseType(typeof(ApiEnvelope<BuyerFeedbackPageResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetFeedbackAsync(
+        [FromQuery] BuyerFeedbackListRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (!TryUserId(out int userId)) return Unauthorized(
+            ApiEnvelope<object>.Failure("AUTH_UNAUTHORIZED"));
+
+        var result = await profiles.GetFeedbackAsync(userId, request, cancellationToken);
+        if (result.IsSuccess)
+            return Ok(ApiEnvelope<BuyerFeedbackPageResponse>.Succeeded(result.Value!));
+
+        var status = result.Failure == ProfileFailure.UserNotFound
+            ? StatusCodes.Status404NotFound
+            : StatusCodes.Status403Forbidden;
+        return StatusCode(status, new ApiEnvelope<object>(
+            false,
+            "Profile request failed",
+            null,
+            result.Errors.Select(error => new ApiError(error.Code, error.Field)).ToArray()));
+    }
+
     [HttpPatch]
     [ProducesResponseType(typeof(ApiEnvelope<ProfileResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> PatchAsync(

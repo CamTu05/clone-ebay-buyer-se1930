@@ -17,6 +17,27 @@ public sealed class ProfileService(IProfileRepository repository) : IProfileServ
         return ProfileServiceResult.Success(ToResponse(user));
     }
 
+    public async Task<BuyerFeedbackServiceResult> GetFeedbackAsync(
+        int authenticatedUserId, BuyerFeedbackListRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (authenticatedUserId <= 0) return BuyerFeedbackServiceResult.Failed(
+            ProfileFailure.UserNotFound, new ProfileFieldError("PROFILE_NOT_FOUND", null));
+
+        var user = await repository.GetByUserIdAsync(authenticatedUserId, cancellationToken);
+        if (user is null) return BuyerFeedbackServiceResult.Failed(
+            ProfileFailure.UserNotFound, new ProfileFieldError("PROFILE_NOT_FOUND", null));
+        if (!CanAccess(user)) return BuyerFeedbackServiceResult.Failed(
+            ProfileFailure.AccountUnavailable, new ProfileFieldError("PROFILE_ACCOUNT_UNAVAILABLE", null));
+
+        var page = await repository.GetFeedbackAsync(
+            authenticatedUserId, request.Page, request.PageSize, cancellationToken);
+        var totalPages = page.TotalItems == 0 ? 0 : (int)Math.Ceiling(page.TotalItems / (double)request.PageSize);
+        return BuyerFeedbackServiceResult.Success(new BuyerFeedbackPageResponse(
+            page.TotalItems, page.Items, request.Page, request.PageSize,
+            page.TotalItems, totalPages));
+    }
+
     public async Task<ProfileServiceResult> UpdateProfileAsync(
         int authenticatedUserId, UpdateProfileRequest request,
         CancellationToken cancellationToken = default)

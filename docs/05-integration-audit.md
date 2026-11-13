@@ -10,7 +10,7 @@ Assess the initialized Buyer Module against the official requirements, architect
 - `docs/02_Architecture_Conventions_Clone_eBay.docx`
 - `docs/03_Database_Design_Clone_eBay.docx`
 - `docs/04_API_Contract_Clone_eBay_Buyer.md`
-- `database/clone_ebay_complete_schema_v2.sql`
+- `database/CloneEbayBuyer.sql`
 
 The DOCX contents were read from their WordprocessingML document XML. The SQL script was inspected only and was not executed.
 
@@ -501,6 +501,12 @@ The database was reverse engineered into `Buyer.Infrastructure`:
 The scaffold generated 39 model classes: 38 concrete table entity classes plus the keyless `vw_ActiveListing` view model. SQL table `CouponListing` is represented as an EF shared-type many-to-many join in `OnModelCreating`, so it intentionally has no dedicated CLR class. The context has 39 `DbSet` properties: 38 table sets and one view set.
 
 The previous empty handwritten `BuyerDbContext` is no longer registered. DI registers only `CloneEbayDbContext`, avoiding competing persistence models. No `IdentityDbContext`, Identity entities, or `AspNet*` tables were generated.
+
+### Buyer Feedback Database First update
+
+`dbo.BuyerFeedback` represents read-only positive Seller → Buyer feedback in the Buyer Module. It is separate from `SellerFeedback`, whose semantics are Buyer → Seller. `BuyerFeedback.orderId` is unique and references a real seller-specific order; buyer and seller IDs reference `User`. Creation belongs to the Seller Module. The Buyer API exposes only `GET /api/me/feedback`.
+
+The development database is recreated from `database/CloneEbayBuyer.sql` and `database/CloneEbayBuyer.Seed.sql`. Both EF context trees were reverse-engineered and reviewed after adding `BuyerFeedback`; no migration, `Database.Migrate()`, or `EnsureCreated()` is used by the development database workflow.
 
 ### Scaffold command pattern
 

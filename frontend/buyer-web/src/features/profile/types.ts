@@ -18,4 +18,32 @@ export interface UpdateProfileRequest {
   clearAvatar?: boolean
 }
 
+export interface BuyerFeedbackPurchaseItem {
+  orderItemId: number
+  listingId: number
+  title: string
+  imageUrl: string | null
+  unitPrice: number
+}
+
+export interface BuyerFeedbackItem {
+  id: number
+  orderId: number
+  seller: { id: number; username: string; avatarUrl: string | null }
+  purchaseItems: BuyerFeedbackPurchaseItem[]
+  currency: string
+  verifiedPurchase: boolean
+  comment: string
+  createdAt: string
+}
+
+export interface BuyerFeedbackPage {
+  positiveFeedbackCount: number
+  items: BuyerFeedbackItem[]
+  page: number
+  pageSize: number
+  totalItems: number
+  totalPages: number
+}
+
 export type ProfileApiEnvelope = ApiEnvelope<BuyerProfile>

@@ -46,6 +46,49 @@ public sealed class ProfileServiceTests
     }
 
     [Fact]
+    public async Task FeedbackReturnsCountItemsAndPaginationForCurrentBuyer()
+    {
+        var feedback = new BuyerFeedbackItemResponse(
+            8, 101, new BuyerFeedbackSellerResponse(20, "camera_store", null),
+            [new BuyerFeedbackPurchaseItemResponse(201, 301, "Camera", null, 500000)],
+            "VND", true, "Great buyer, prompt payment. Thank you!", DateTime.UtcNow);
+        var repo = new FakeRepository { User = Buyer, FeedbackPage = new(3, [feedback]) };
+
+        var result = await new ProfileService(repo).GetFeedbackAsync(
+            12, new BuyerFeedbackListRequest { Page = 2, PageSize = 1 });
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(12, repo.LastFeedbackBuyerId);
+        Assert.Equal(2, repo.LastFeedbackPage);
+        Assert.Equal(1, repo.LastFeedbackPageSize);
+        Assert.Equal(3, result.Value!.PositiveFeedbackCount);
+        Assert.Equal(3, result.Value.TotalPages);
+        Assert.Equal("camera_store", Assert.Single(result.Value.Items).Seller.Username);
+    }
+
+    [Theory]
+    [InlineData("SELLER", "ACTIVE")]
+    [InlineData("BUYER", "SUSPENDED")]
+    public async Task FeedbackRejectsUnavailableAccount(string role, string status)
+    {
+        var repo = new FakeRepository { User = Buyer with { Role = role, AccountStatus = status } };
+        var result = await new ProfileService(repo).GetFeedbackAsync(12, new());
+        Assert.Equal(ProfileFailure.AccountUnavailable, result.Failure);
+        Assert.Equal(0, repo.LastFeedbackBuyerId);
+    }
+
+    [Fact]
+    public async Task FeedbackEmptyPageIsSuccessful()
+    {
+        var repo = new FakeRepository { User = Buyer, FeedbackPage = new(0, []) };
+        var result = await new ProfileService(repo).GetFeedbackAsync(12, new());
+        Assert.True(result.IsSuccess);
+        Assert.Equal(0, result.Value!.PositiveFeedbackCount);
+        Assert.Empty(result.Value.Items);
+        Assert.Equal(0, result.Value.TotalPages);
+    }
+
+    [Fact]
     public async Task UpdateRejectsInvalidBodyWithoutWriting()
     {
         var repo = new FakeRepository { User = Buyer };
@@ -128,7 +171,11 @@ public sealed class ProfileServiceTests
     {
         public ProfileUserSnapshot? User { get; init; }
         public ProfileSaveStatus SaveStatus { get; init; } = ProfileSaveStatus.Updated;
+        public BuyerFeedbackRepositoryPage FeedbackPage { get; init; } = new(0, []);
         public int LastReadId { get; private set; }
+        public int LastFeedbackBuyerId { get; private set; }
+        public int LastFeedbackPage { get; private set; }
+        public int LastFeedbackPageSize { get; private set; }
         public ProfileChanges? LastChanges { get; private set; }
 
         public Task<ProfileUserSnapshot?> GetByUserIdAsync(
@@ -136,6 +183,16 @@ public sealed class ProfileServiceTests
         {
             LastReadId = userId;
             return Task.FromResult(User is { } user && user.Id == userId ? user : null);
+        }
+
+        public Task<BuyerFeedbackRepositoryPage> GetFeedbackAsync(
+            int buyerId, int page, int pageSize,
+            CancellationToken cancellationToken = default)
+        {
+            LastFeedbackBuyerId = buyerId;
+            LastFeedbackPage = page;
+            LastFeedbackPageSize = pageSize;
+            return Task.FromResult(FeedbackPage);
         }
 
         public Task<bool> IsUsernameTakenAsync(string username,

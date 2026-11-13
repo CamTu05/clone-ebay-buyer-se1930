@@ -51,6 +51,51 @@ public sealed class ProfileApiTests
     }
 
     [Fact]
+    public async Task FeedbackRequiresAuthentication()
+    {
+        using var factory = CreateFactory(new StubProfiles());
+        using var client = factory.CreateClient();
+        var response = await client.GetAsync("/api/me/feedback");
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task FeedbackUsesJwtOwnerAndQueryPagination()
+    {
+        var service = new StubProfiles();
+        using var factory = CreateFactory(service);
+        using var client = factory.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new("Bearer", Token(42, "BUYER"));
+
+        var response = await client.GetAsync("/api/me/feedback?page=2&pageSize=5");
+        var body = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(42, service.LastId);
+        Assert.Equal(2, service.LastFeedbackRequest!.Page);
+        Assert.Equal(5, service.LastFeedbackRequest.PageSize);
+        Assert.Contains("positiveFeedbackCount", body);
+        Assert.Contains("orderId", body);
+        Assert.Contains("purchaseItems", body);
+        Assert.Contains("verifiedPurchase", body);
+        Assert.DoesNotContain("passwordHash", body);
+        Assert.DoesNotContain("shippingEmail", body);
+    }
+
+    [Theory]
+    [InlineData("0", "10")]
+    [InlineData("1", "0")]
+    [InlineData("1", "101")]
+    public async Task FeedbackRejectsInvalidPagination(string page, string pageSize)
+    {
+        using var factory = CreateFactory(new StubProfiles());
+        using var client = factory.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new("Bearer", Token(42, "BUYER"));
+        var response = await client.GetAsync($"/api/me/feedback?page={page}&pageSize={pageSize}");
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
     public async Task PatchMapsUsernameTakenTo409()
     {
         var service = new StubProfiles { RejectUpdate = true };
@@ -107,6 +152,7 @@ public sealed class ProfileApiTests
     private sealed class StubProfiles : IProfileService
     {
         public int LastId { get; private set; }
+        public BuyerFeedbackListRequest? LastFeedbackRequest { get; private set; }
         public bool RejectUpdate { get; set; }
 
         public Task<ProfileServiceResult> GetProfileAsync(int authenticatedUserId,
@@ -116,6 +162,21 @@ public sealed class ProfileApiTests
             return Task.FromResult(ProfileServiceResult.Success(
                 new ProfileResponse(authenticatedUserId, "mybuyer42",
                     "buyer@example.com", null, null, true)));
+        }
+
+        public Task<BuyerFeedbackServiceResult> GetFeedbackAsync(
+            int authenticatedUserId, BuyerFeedbackListRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            LastId = authenticatedUserId;
+            LastFeedbackRequest = request;
+            var item = new BuyerFeedbackItemResponse(
+                1, 101, new BuyerFeedbackSellerResponse(7, "camera_store", null),
+                [new BuyerFeedbackPurchaseItemResponse(201, 301, "Camera", null, 500000)],
+                "VND", true, "Great buyer", DateTime.UtcNow);
+            return Task.FromResult(BuyerFeedbackServiceResult.Success(
+                new BuyerFeedbackPageResponse(1, [item], request.Page,
+                    request.PageSize, 1, 1)));
         }
 
         public Task<ProfileServiceResult> UpdateProfileAsync(int authenticatedUserId,

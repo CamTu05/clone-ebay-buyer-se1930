@@ -8,16 +8,20 @@ public sealed class ProductRepository(BuyerSchemaContext db) : IProductRepositor
     // Only public listings from active sellers are exposed; private account fields never enter DTOs.
     public async Task<ProductDetailResponse?> GetDetailAsync(int productId, CancellationToken cancellationToken)
     {
+        var now = DateTime.UtcNow;
         return await db.Products.AsNoTracking()
-            .Where(p => p.id == productId && p.category.isActive
-                && p.Listings.Any(l => l.status == "ACTIVE" && l.seller.accountStatus == "ACTIVE"))
+            .Where(p => p.id == productId && p.category.isActive && p.Listings.Any(l => l.status == "ACTIVE" && l.quantity > 0 && l.seller.accountStatus == "ACTIVE"
+                && (l.publishedAt == null || l.publishedAt <= now) && (l.endedAt == null || l.endedAt > now)
+                && (l.listingType == "FIXED_PRICE" && l.price != null || l.listingType == "AUCTION" && l.Auction != null && l.Auction.status == "ACTIVE" && l.Auction.startTime <= now && l.Auction.endTime > now)))
             .Select(p => new ProductDetailResponse(p.id, p.title, p.description, p.brand, p.Listings.Select(l => l.itemCondition).FirstOrDefault(),
                 p.ProductImages.OrderByDescending(i => i.isPrimary).ThenBy(i => i.sortOrder).ThenBy(i => i.id)
                     .Select(i => new Buyer.Application.Catalog.ProductImageResponse(i.id, i.imageUrl, i.isPrimary)).ToList(),
-                p.Listings.Where(l => l.status == "ACTIVE" && l.seller.accountStatus == "ACTIVE")
+                p.Listings.Where(l => l.status == "ACTIVE" && l.quantity > 0 && l.seller.accountStatus == "ACTIVE"
+                        && (l.publishedAt == null || l.publishedAt <= now) && (l.endedAt == null || l.endedAt > now)
+                        && (l.listingType == "FIXED_PRICE" && l.price != null || l.listingType == "AUCTION" && l.Auction != null && l.Auction.status == "ACTIVE" && l.Auction.startTime <= now && l.Auction.endTime > now))
                     .OrderBy(l => l.id)
                     .Select(l => new ProductListingResponse(l.id, l.listingType,
-                        l.listingType == "AUCTION" ? (l.Auction == null ? null : l.Auction.currentPrice) : l.price,
+                        l.listingType == "AUCTION" ? l.Auction!.currentPrice : l.price,
                         new SellerResponse(l.seller.id, l.seller.username, l.seller.avatarURL,
                             null), l.Auction == null ? null : l.Auction.id, l.itemCondition)).ToList()))
             .SingleOrDefaultAsync(cancellationToken);

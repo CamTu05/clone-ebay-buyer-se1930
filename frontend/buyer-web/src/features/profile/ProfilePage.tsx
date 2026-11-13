@@ -7,6 +7,7 @@ import { getProfile, isCanceled, isUnauthorized, profileErrorMessage, updateProf
 import { Icon, ProfileAvatar, primaryButton } from './ProfileUi'
 import type { BuyerProfile, UpdateProfileRequest } from './types'
 import { AccountNavigation } from './AccountNavigation'
+import { BuyerFeedbackSection } from './BuyerFeedbackSection'
 
 type ActiveModal = 'username' | 'photo' | null
 
@@ -128,6 +129,7 @@ export function ProfilePage() {
               description={profile.phoneVerified ? 'Phone verified' : 'Phone not verified'} />
           </div>
         </section>
+        <BuyerFeedbackSection onUnauthorized={logout} />
         <section className="account-panel mt-6 flex flex-wrap items-center justify-between gap-5 p-6">
           <div><h3 className="mb-1 text-lg font-bold">Shipping addresses</h3><p className="account-description">Choose where your purchases are delivered.</p></div>
           <Link className="account-link-button" to="/addresses">Manage addresses</Link>

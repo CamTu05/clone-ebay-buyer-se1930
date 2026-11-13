@@ -15,11 +15,15 @@ public partial class Listing
 
     public int? shippingPolicyId { get; set; }
 
+    public int? returnPolicyId { get; set; }
+
     public string title { get; set; } = null!;
 
     public string? description { get; set; }
 
     public string? itemCondition { get; set; }
+
+    public string? itemCountryCode { get; set; }
 
     public string listingType { get; set; } = null!;
 
@@ -43,7 +47,11 @@ public partial class Listing
 
     public virtual ICollection<ListingImage> ListingImages { get; set; } = new List<ListingImage>();
 
+    public virtual ListingPromotion? ListingPromotion { get; set; }
+
     public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
+
+    public virtual ReturnPolicy? ReturnPolicy { get; set; }
 
     public virtual ShippingPolicy? ShippingPolicy { get; set; }
 

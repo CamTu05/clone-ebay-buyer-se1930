@@ -11,13 +11,11 @@ exec docker exec -e SQLCMDPASSWORD "$SQL_CONTAINER_ID" /opt/mssql-tools18/bin/sq
 WRAPPER
 chmod +x "$RUNNER_TEMP/buyer-tools/sqlcmd"
 export PATH="$RUNNER_TEMP/buyer-tools:$PATH"
-for file in CloneEbayBuyer.sql CloneEbayBuyer.Seed.sql CloneEbayBuyer.Passwords.sql; do
+for file in CloneEbayBuyer.sql CloneEbayBuyer.Seed.sql; do
  sed 's/CloneEbayBuyer/CloneEbayBuyer_Test_ci/g' "database/$file" > "$RUNNER_TEMP/$file"
  docker cp "$RUNNER_TEMP/$file" "$SQL_CONTAINER_ID:/tmp/$file"
- sqlcmd -S localhost -U sa -C -I -b -i "/tmp/$file"
+ sqlcmd -S localhost -U sa -C -I -b -f 65001 -i "/tmp/$file"
 done
-docker cp database/upgrades/001-buyer-completion.sql "$SQL_CONTAINER_ID:/tmp/completion.sql"
-sqlcmd -S localhost -U sa -C -I -b -d "$BUYER_TEST_DATABASE" -i /tmp/completion.sql
 export ASPNETCORE_ENVIRONMENT=Development
 export ConnectionStrings__BuyerDatabase="Server=localhost,1433;Database=$BUYER_TEST_DATABASE;User Id=sa;Password=$SQLCMDPASSWORD;TrustServerCertificate=True"
 export Jwt__SigningKey='ci-only-ephemeral-signing-key-at-least-32-characters'

@@ -31,10 +31,7 @@ function SearchBox() {
   return <form className="global-search" role="search" onSubmit={search}>
     <div className="search-field"><Icon name="search" size={20}/><label className="sr-only" htmlFor="global-query">Search for anything</label><input id="global-query" type="search" placeholder="Search for anything" value={query} onChange={event => setQuery(event.target.value)}/><Link className="image-search" to="/help" aria-label="Search help"><Icon name="camera" size={20}/></Link><label className="sr-only" htmlFor="search-category">Search category</label><select id="search-category" value={category} onChange={event => setCategory(event.target.value)}><option value="">All Categories</option>{categories.map(name => <option key={name}>{name}</option>)}</select></div>
     <button className="search-submit" type="submit">Search</button>
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', alignItems: 'flex-start', flexShrink: 0 }}>
-      <Link className="advanced-link" to="/catalog">Advanced</Link>
-      <Link className="advanced-link" to="/advanced-search" style={{ color: '#0064d2', fontWeight: 600 }}>Advanced 2</Link>
-    </div>
+    <Link className="advanced-link" to="/advanced-search">Advanced</Link>
   </form>
 }
 

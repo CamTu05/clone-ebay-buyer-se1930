@@ -1,5 +1,6 @@
 using System.Data;
 using System.Data.Common;
+using Buyer.Application.Catalog;
 using Buyer.Infrastructure.Catalog;
 using Buyer.Infrastructure.Data;
 using Buyer.Infrastructure.Data.Models;
@@ -144,6 +145,67 @@ public sealed class ProductCatalogRepositoryTests
         Assert.Empty(missingPage.Items);
         Assert.Empty(largePage.Items);
         Assert.All(new[] { middlePage, lastPage, missingPage, largePage }, page => Assert.Equal(5, page.TotalItems));
+    }
+
+    [Theory]
+    [InlineData("all", "red shoe", new[] { 1, 2, 4 })]
+    [InlineData("any", "red shoe", new[] { 1, 2, 3, 4 })]
+    [InlineData("exact", "red shoe", new[] { 1 })]
+    [InlineData("exact-any-order", "red shoe", new[] { 1, 2 })]
+    public async Task KeywordMatchModesHaveDistinctSemantics(string match, string query, int[] expected)
+    {
+        await using var database = CreateDatabase();
+        database.Products.AddRange(
+            ProductWithListing(1, listing => listing.title = "red shoe"),
+            ProductWithListing(2, listing => listing.title = "shoe red"),
+            ProductWithListing(3, listing => listing.title = "red jacket"),
+            ProductWithListing(4, listing => listing.title = "credit shoestring"));
+        await database.SaveChangesAsync();
+        database.ChangeTracker.Clear();
+
+        var result = await new ProductCatalogRepository(database).SearchAsync(
+            new ProductListRequest { Q = query, Match = match, Page = 1, PageSize = 20 }, Now, default);
+
+        Assert.Equal(expected, result.Items.Select(item => item.ProductId));
+    }
+
+    [Fact]
+    public async Task ExactWordsAnyOrderMatchesStartEndAndRequiresEveryCompleteWord()
+    {
+        await using var database = CreateDatabase();
+        database.Products.AddRange(
+            ProductWithListing(1, listing => listing.title = "camera leather strap"),
+            ProductWithListing(2, listing => listing.title = "strap for camera"),
+            ProductWithListing(3, listing => listing.title = "camera strapless bag"),
+            ProductWithListing(4, listing => listing.title = "camera only"));
+        await database.SaveChangesAsync();
+
+        var result = await new ProductCatalogRepository(database).SearchAsync(
+            new ProductListRequest { Q = "strap camera", Match = "exact-any-order" }, Now, default);
+
+        Assert.Equal(new[] { 1, 2 }, result.Items.Select(item => item.ProductId));
+    }
+
+    [Theory]
+    [InlineData("New", new[] { 1 })]
+    [InlineData("Used", new[] { 2, 3 })]
+    [InlineData("Not specified", new[] { 4, 5 })]
+    [InlineData("New,Not specified", new[] { 1, 4, 5 })]
+    public async Task ConditionFilterUsesEbayGroups(string condition, int[] expected)
+    {
+        await using var database = CreateDatabase();
+        database.Products.AddRange(
+            ProductWithListing(1, listing => listing.itemCondition = "New"),
+            ProductWithListing(2, listing => listing.itemCondition = "Used"),
+            ProductWithListing(3, listing => listing.itemCondition = "Used - Good"),
+            ProductWithListing(4, listing => listing.itemCondition = null),
+            ProductWithListing(5, listing => listing.itemCondition = ""));
+        await database.SaveChangesAsync();
+
+        var result = await new ProductCatalogRepository(database).SearchAsync(
+            new ProductListRequest { Condition = condition }, Now, default);
+
+        Assert.Equal(expected, result.Items.Select(item => item.ProductId));
     }
 
     [Fact]

@@ -18,6 +18,8 @@ public partial class BuyerSchemaContext : DbContext
 
     public virtual DbSet<Bid> Bids { get; set; }
 
+    public virtual DbSet<BuyerFeedback> BuyerFeedbacks { get; set; }
+
     public virtual DbSet<CancellationRequest> CancellationRequests { get; set; }
 
     public virtual DbSet<Cart> Carts { get; set; }
@@ -40,6 +42,8 @@ public partial class BuyerSchemaContext : DbContext
 
     public virtual DbSet<ListingImage> ListingImages { get; set; }
 
+    public virtual DbSet<ListingPromotion> ListingPromotions { get; set; }
+
     public virtual DbSet<Notification> Notifications { get; set; }
 
     public virtual DbSet<OrderItem> OrderItems { get; set; }
@@ -51,6 +55,8 @@ public partial class BuyerSchemaContext : DbContext
     public virtual DbSet<Product> Products { get; set; }
 
     public virtual DbSet<ProductImage> ProductImages { get; set; }
+
+    public virtual DbSet<ReturnPolicy> ReturnPolicies { get; set; }
 
     public virtual DbSet<ReturnRequest> ReturnRequests { get; set; }
 
@@ -65,6 +71,8 @@ public partial class BuyerSchemaContext : DbContext
     public virtual DbSet<ShippingOption> ShippingOptions { get; set; }
 
     public virtual DbSet<ShippingPolicy> ShippingPolicies { get; set; }
+
+    public virtual DbSet<ShippingPolicyDestinationCountry> ShippingPolicyDestinationCountries { get; set; }
 
     public virtual DbSet<User> Users { get; set; }
 
@@ -170,6 +178,34 @@ public partial class BuyerSchemaContext : DbContext
                 .HasForeignKey(d => d.bidderId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Bid_Bidder");
+        });
+
+        modelBuilder.Entity<BuyerFeedback>(entity =>
+        {
+            entity.ToTable("BuyerFeedback");
+
+            entity.HasIndex(e => new { e.buyerId, e.createdAt, e.id }, "IX_BuyerFeedback_BuyerCreated").IsDescending(false, true, true);
+
+            entity.HasIndex(e => e.orderId, "UQ_BuyerFeedback_Order").IsUnique();
+
+            entity.Property(e => e.createdAt)
+                .HasPrecision(3)
+                .HasDefaultValueSql("(sysutcdatetime())");
+
+            entity.HasOne(d => d.buyer).WithMany(p => p.BuyerFeedbackbuyers)
+                .HasForeignKey(d => d.buyerId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_BuyerFeedback_Buyer");
+
+            entity.HasOne(d => d.order).WithOne(p => p.BuyerFeedback)
+                .HasForeignKey<BuyerFeedback>(d => d.orderId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_BuyerFeedback_Order");
+
+            entity.HasOne(d => d.seller).WithMany(p => p.BuyerFeedbacksellers)
+                .HasForeignKey(d => d.sellerId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_BuyerFeedback_Seller");
         });
 
         modelBuilder.Entity<CancellationRequest>(entity =>
@@ -393,6 +429,8 @@ public partial class BuyerSchemaContext : DbContext
 
             entity.HasIndex(e => new { e.categoryId, e.status, e.listingType }, "IX_Listing_CategoryStatus");
 
+            entity.HasIndex(e => new { e.itemCountryCode, e.status, e.listingType }, "IX_Listing_ItemCountryStatus").HasFilter("([itemCountryCode] IS NOT NULL)");
+
             entity.HasIndex(e => e.productId, "IX_Listing_Product").HasFilter("([productId] IS NOT NULL)");
 
             entity.HasIndex(e => new { e.sellerId, e.status }, "IX_Listing_SellerStatus");
@@ -404,6 +442,7 @@ public partial class BuyerSchemaContext : DbContext
                 .HasDefaultValueSql("(sysutcdatetime())");
             entity.Property(e => e.endedAt).HasPrecision(3);
             entity.Property(e => e.itemCondition).HasMaxLength(50);
+            entity.Property(e => e.itemCountryCode).HasMaxLength(2);
             entity.Property(e => e.listingType).HasMaxLength(20);
             entity.Property(e => e.price).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.publishedAt).HasPrecision(3);
@@ -430,10 +469,30 @@ public partial class BuyerSchemaContext : DbContext
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Listing_Seller");
 
+            entity.HasOne(d => d.ReturnPolicy).WithMany(p => p.Listings)
+                .HasPrincipalKey(p => new { p.id, p.sellerId })
+                .HasForeignKey(d => new { d.returnPolicyId, d.sellerId })
+                .HasConstraintName("FK_Listing_ReturnPolicySeller");
+
             entity.HasOne(d => d.ShippingPolicy).WithMany(p => p.Listings)
                 .HasPrincipalKey(p => new { p.id, p.sellerId })
                 .HasForeignKey(d => new { d.shippingPolicyId, d.sellerId })
                 .HasConstraintName("FK_Listing_ShippingPolicySeller");
+        });
+
+        modelBuilder.Entity<ListingPromotion>(entity =>
+        {
+            entity.ToTable("ListingPromotion");
+            entity.HasIndex(e => new { e.isActive, e.startsAt, e.endsAt, e.listingId }, "IX_ListingPromotion_ActiveDates");
+            entity.HasIndex(e => e.listingId, "UX_ListingPromotion_OneEnabledPerListing").IsUnique().HasFilter("([isActive]=(1))");
+            entity.Property(e => e.createdAt).HasPrecision(3).HasDefaultValueSql("(sysutcdatetime())");
+            entity.Property(e => e.endsAt).HasPrecision(3);
+            entity.Property(e => e.isActive).HasDefaultValue(true);
+            entity.Property(e => e.originalPrice).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.promotionType).HasMaxLength(10);
+            entity.Property(e => e.salePrice).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.startsAt).HasPrecision(3);
+            entity.HasOne(d => d.listing).WithOne(p => p.ListingPromotion).HasForeignKey<ListingPromotion>(d => d.listingId).OnDelete(DeleteBehavior.ClientSetNull).HasConstraintName("FK_ListingPromotion_Listing");
         });
 
         modelBuilder.Entity<ListingImage>(entity =>
@@ -647,6 +706,17 @@ public partial class BuyerSchemaContext : DbContext
                 .HasConstraintName("FK_ProductImage_Product");
         });
 
+        modelBuilder.Entity<ReturnPolicy>(entity =>
+        {
+            entity.ToTable("ReturnPolicy");
+            entity.HasIndex(e => e.sellerId, "IX_ReturnPolicy_Seller");
+            entity.HasIndex(e => new { e.id, e.sellerId }, "UQ_ReturnPolicy_IdSeller").IsUnique();
+            entity.Property(e => e.createdAt).HasPrecision(3).HasDefaultValueSql("(sysutcdatetime())");
+            entity.Property(e => e.isActive).HasDefaultValue(true);
+            entity.Property(e => e.name).HasMaxLength(150);
+            entity.HasOne(d => d.seller).WithMany(p => p.ReturnPolicies).HasForeignKey(d => d.sellerId).OnDelete(DeleteBehavior.ClientSetNull).HasConstraintName("FK_ReturnPolicy_Seller");
+        });
+
         modelBuilder.Entity<ReturnRequest>(entity =>
         {
             entity.ToTable("ReturnRequest");
@@ -815,6 +885,15 @@ public partial class BuyerSchemaContext : DbContext
                 .HasForeignKey(d => d.sellerId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_ShippingPolicy_Seller");
+        });
+
+        modelBuilder.Entity<ShippingPolicyDestinationCountry>(entity =>
+        {
+            entity.HasKey(e => new { e.shippingPolicyId, e.countryCode });
+            entity.ToTable("ShippingPolicyDestinationCountry");
+            entity.HasIndex(e => new { e.countryCode, e.shippingPolicyId }, "IX_ShippingPolicyDestinationCountry_CountryPolicy");
+            entity.Property(e => e.countryCode).HasMaxLength(2);
+            entity.HasOne(d => d.shippingPolicy).WithMany(p => p.ShippingPolicyDestinationCountries).HasForeignKey(d => d.shippingPolicyId).HasConstraintName("FK_ShippingPolicyDestinationCountry_Policy");
         });
 
         modelBuilder.Entity<User>(entity =>

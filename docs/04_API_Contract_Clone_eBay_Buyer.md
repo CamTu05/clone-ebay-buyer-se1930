@@ -3,9 +3,13 @@
 **Version:** 0.1 (Baseline / Draft)  
 **Status:** Working contract — cập nhật cùng từng feature/PR  
 **Ownership:** Tech Lead duyệt quy tắc chung; Feature Owner quản lý endpoint của mình  
-**References:** 01 Requirements & Task Breakdown; 02 Architecture & Conventions; 03 Database Design; `clone_ebay_complete_schema_v2.sql`.
+**References:** 01 Requirements & Task Breakdown; 02 Architecture & Conventions; 03 Database Design; `database/CloneEbayBuyer.sql`.
 
 > **Quan trọng:** Đây là tài liệu thống nhất **quy ước** và **danh mục endpoint đề xuất**, không tuyên bố các API đã được implement. Tất cả endpoint trong phần *Endpoint Register* ở trạng thái `PROPOSED` cho đến khi được xác nhận qua PR. OpenAPI/Swagger của API chạy được sẽ là nguồn phản ánh chính xác request/response đã triển khai. Nếu contract thay đổi, update cùng PR.
+
+## Buyer Feedback scope
+
+Buyer Feedback trong Buyer Module là dữ liệu chỉ đọc theo chiều Seller → Buyer sau giao dịch. Endpoint `GET /api/me/feedback` chỉ trả positive feedback của buyer hiện tại, seller username/avatar, comment, thời gian, `orderId` và các snapshot item của order (`listingId`, title, image, unit price). Buyer ID luôn lấy từ JWT. Frontend dùng `orderId` để deep-link tới `/orders?orderId={id}` trong Purchase History. Việc Seller tạo feedback thuộc Seller Module; Buyer Module không cung cấp API POST/PATCH/DELETE cho `BuyerFeedback`.
 
 ## 1. Mục tiêu và phạm vi
 
@@ -68,8 +72,9 @@
 | Auth/OTP | POST | `/api/auth/otp/verify` | TBD | P0 | PROPOSED | TBD |
 | Auth/Social | GET | `/api/auth/external/{provider}/start` | Public | P0* | PROPOSED | TBD |
 | Auth/Social | GET | `/api/auth/external/{provider}/callback` | Public | P0* | PROPOSED | TBD |
-| Profile | GET | `/api/me` | JWT | P0 | PROPOSED | TBD |
-| Profile | PATCH | `/api/me` | JWT | P0 | PROPOSED | TBD |
+| Profile | GET | `/api/me` | JWT | P0 | IMPLEMENTED | Buyer profile |
+| Profile | GET | `/api/me/feedback?page=1&pageSize=10` | JWT | P1 | IMPLEMENTED | Read-only positive Seller → Buyer feedback; owner from JWT |
+| Profile | PATCH | `/api/me` | JWT | P0 | IMPLEMENTED | Editable username/avatar only |
 | Address | GET/POST | `/api/addresses` | JWT | P0 | IMPLEMENTED | TBD |
 | Address | GET/PATCH/DELETE | `/api/addresses/{addressId}` | JWT/owner | P0 | IMPLEMENTED | TBD |
 | Address | PATCH | `/api/addresses/{addressId}/default` | JWT/owner | P0 | IMPLEMENTED | TBD |

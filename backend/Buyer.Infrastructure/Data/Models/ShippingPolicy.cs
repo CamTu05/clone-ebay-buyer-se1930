@@ -19,5 +19,7 @@ public partial class ShippingPolicy
 
     public virtual ICollection<ShippingOption> ShippingOptions { get; set; } = new List<ShippingOption>();
 
+    public virtual ICollection<ShippingPolicyDestinationCountry> ShippingPolicyDestinationCountries { get; set; } = new List<ShippingPolicyDestinationCountry>();
+
     public virtual User seller { get; set; } = null!;
 }

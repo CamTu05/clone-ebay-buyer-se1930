@@ -1,10 +1,10 @@
 /*
   Clone eBay - Buyer Module - Database V3 (SQL Server 2019+)
-  Fresh CREATE script. Database name: CloneEbayDB_V3.
-  IMPORTANT: This script does NOT drop CloneEbayDB_V2 or any existing database.
-  This script intentionally aborts if CloneEbayDB_V3 already exists.
+  Fresh CREATE script. Database name: CloneEbayBuyer.
+  IMPORTANT: This script does not drop any existing database.
+  This script intentionally aborts if CloneEbayBuyer already exists.
 
-  Scope: 30 tables, 1 listing view; account, catalog/listings, shopping cart,
+  Scope: 36 tables, 1 listing view; account, catalog/listings, shopping cart,
   auctions, multi-seller checkout, group-level mock payment, guest access,
   shipping, cancellation/return requests, feedback, notifications.
 
@@ -39,6 +39,8 @@ CREATE TABLE dbo.[User] (
     createdAt        DATETIME2(3) NOT NULL CONSTRAINT DF_User_CreatedAt DEFAULT SYSUTCDATETIME(),
     updatedAt        DATETIME2(3) NOT NULL CONSTRAINT DF_User_UpdatedAt DEFAULT SYSUTCDATETIME(),
     lastLoginAt      DATETIME2(3) NULL,
+    authVersion      INT NOT NULL CONSTRAINT DF_User_AuthVersion DEFAULT (0),
+    usernameChangedAt DATETIME2(3) NULL,
     CONSTRAINT UQ_User_Email UNIQUE (email),
     CONSTRAINT CK_User_Role CHECK (role IN (N'BUYER', N'SELLER', N'ADMIN')),
     CONSTRAINT CK_User_Status CHECK (accountStatus IN (N'ACTIVE', N'LOCKED', N'SUSPENDED', N'DELETED')),
@@ -165,6 +167,26 @@ GO
 CREATE INDEX IX_ShippingPolicy_Seller ON dbo.ShippingPolicy(sellerId);
 GO
 
+CREATE TABLE dbo.ReturnPolicy (
+    id               INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_ReturnPolicy PRIMARY KEY,
+    sellerId         INT NOT NULL,
+    name             NVARCHAR(150) NOT NULL,
+    returnsAccepted  BIT NOT NULL CONSTRAINT DF_ReturnPolicy_ReturnsAccepted DEFAULT (0),
+    freeReturns      BIT NOT NULL CONSTRAINT DF_ReturnPolicy_FreeReturns DEFAULT (0),
+    returnWindowDays INT NULL,
+    isActive         BIT NOT NULL CONSTRAINT DF_ReturnPolicy_IsActive DEFAULT (1),
+    createdAt        DATETIME2(3) NOT NULL CONSTRAINT DF_ReturnPolicy_CreatedAt DEFAULT SYSUTCDATETIME(),
+    CONSTRAINT FK_ReturnPolicy_Seller FOREIGN KEY (sellerId) REFERENCES dbo.[User](id),
+    CONSTRAINT UQ_ReturnPolicy_IdSeller UNIQUE (id, sellerId),
+    CONSTRAINT CK_ReturnPolicy_Name CHECK (LEN(LTRIM(RTRIM(name))) > 0),
+    CONSTRAINT CK_ReturnPolicy_Terms CHECK (
+        (returnsAccepted = 0 AND freeReturns = 0 AND returnWindowDays IS NULL) OR
+        (returnsAccepted = 1 AND returnWindowDays BETWEEN 1 AND 365))
+);
+GO
+CREATE INDEX IX_ReturnPolicy_Seller ON dbo.ReturnPolicy(sellerId);
+GO
+
 CREATE TABLE dbo.ShippingOption (
     id               INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_ShippingOption PRIMARY KEY,
     shippingPolicyId INT NOT NULL,
@@ -187,15 +209,28 @@ GO
 CREATE INDEX IX_ShippingOption_Policy ON dbo.ShippingOption(shippingPolicyId);
 GO
 
+CREATE TABLE dbo.ShippingPolicyDestinationCountry (
+    shippingPolicyId INT NOT NULL,
+    countryCode      NVARCHAR(2) NOT NULL,
+    CONSTRAINT PK_ShippingPolicyDestinationCountry PRIMARY KEY (shippingPolicyId, countryCode),
+    CONSTRAINT FK_ShippingPolicyDestinationCountry_Policy FOREIGN KEY (shippingPolicyId) REFERENCES dbo.ShippingPolicy(id) ON DELETE CASCADE,
+    CONSTRAINT CK_ShippingPolicyDestinationCountry_Code CHECK (LEN(countryCode) = 2)
+);
+GO
+CREATE INDEX IX_ShippingPolicyDestinationCountry_CountryPolicy ON dbo.ShippingPolicyDestinationCountry(countryCode, shippingPolicyId);
+GO
+
 CREATE TABLE dbo.Listing (
     id               INT IDENTITY(1,1) NOT NULL CONSTRAINT PK_Listing PRIMARY KEY,
     productId        INT NULL,                  -- independent listings are allowed
     sellerId         INT NOT NULL,
     categoryId       INT NOT NULL,
     shippingPolicyId INT NULL,
+    returnPolicyId   INT NULL,
     title            NVARCHAR(255) NOT NULL,
     description      NVARCHAR(MAX) NULL,
     itemCondition    NVARCHAR(50) NULL,
+    itemCountryCode  NVARCHAR(2) NULL,
     listingType      NVARCHAR(20) NOT NULL,
     price            DECIMAL(18,2) NULL,       -- required for FIXED_PRICE; NULL for AUCTION
     quantity         INT NOT NULL CONSTRAINT DF_Listing_Quantity DEFAULT (1),
@@ -209,6 +244,9 @@ CREATE TABLE dbo.Listing (
     CONSTRAINT FK_Listing_Category FOREIGN KEY (categoryId) REFERENCES dbo.Category(id),
     CONSTRAINT FK_Listing_ShippingPolicySeller FOREIGN KEY (shippingPolicyId, sellerId)
         REFERENCES dbo.ShippingPolicy(id, sellerId),
+    CONSTRAINT FK_Listing_ReturnPolicySeller FOREIGN KEY (returnPolicyId, sellerId)
+        REFERENCES dbo.ReturnPolicy(id, sellerId),
+    CONSTRAINT CK_Listing_ItemCountry CHECK (itemCountryCode IS NULL OR LEN(itemCountryCode) = 2),
     CONSTRAINT CK_Listing_Type CHECK (listingType IN (N'FIXED_PRICE', N'AUCTION')),
     CONSTRAINT CK_Listing_Price CHECK (
         (listingType = N'FIXED_PRICE' AND price IS NOT NULL AND price >= 0)
@@ -222,6 +260,27 @@ CREATE INDEX IX_Listing_CategoryStatus ON dbo.Listing(categoryId, status, listin
 CREATE INDEX IX_Listing_Product ON dbo.Listing(productId) WHERE productId IS NOT NULL;
 CREATE INDEX IX_Listing_SellerStatus ON dbo.Listing(sellerId, status);
 CREATE INDEX IX_Listing_StatusPrice ON dbo.Listing(status, listingType, price);
+CREATE INDEX IX_Listing_ItemCountryStatus ON dbo.Listing(itemCountryCode, status, listingType) WHERE itemCountryCode IS NOT NULL;
+GO
+
+CREATE TABLE dbo.ListingPromotion (
+    id             BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT PK_ListingPromotion PRIMARY KEY,
+    listingId      INT NOT NULL,
+    promotionType  NVARCHAR(10) NOT NULL,
+    originalPrice  DECIMAL(18,2) NOT NULL,
+    salePrice      DECIMAL(18,2) NOT NULL,
+    startsAt       DATETIME2(3) NOT NULL,
+    endsAt         DATETIME2(3) NOT NULL,
+    isActive       BIT NOT NULL CONSTRAINT DF_ListingPromotion_IsActive DEFAULT (1),
+    createdAt      DATETIME2(3) NOT NULL CONSTRAINT DF_ListingPromotion_CreatedAt DEFAULT SYSUTCDATETIME(),
+    CONSTRAINT FK_ListingPromotion_Listing FOREIGN KEY (listingId) REFERENCES dbo.Listing(id),
+    CONSTRAINT CK_ListingPromotion_Type CHECK (promotionType IN (N'DEAL', N'SALE')),
+    CONSTRAINT CK_ListingPromotion_Prices CHECK (originalPrice > 0 AND salePrice >= 0 AND salePrice < originalPrice),
+    CONSTRAINT CK_ListingPromotion_Time CHECK (startsAt < endsAt)
+);
+GO
+CREATE UNIQUE INDEX UX_ListingPromotion_OneEnabledPerListing ON dbo.ListingPromotion(listingId) WHERE isActive = 1;
+CREATE INDEX IX_ListingPromotion_ActiveDates ON dbo.ListingPromotion(isActive, startsAt, endsAt, listingId) INCLUDE (promotionType, originalPrice, salePrice);
 GO
 
 CREATE TABLE dbo.ListingImage (
@@ -363,6 +422,7 @@ CREATE TABLE dbo.CheckoutGroup (
     subtotal          DECIMAL(18,2) NOT NULL,
     discountAmount    DECIMAL(18,2) NOT NULL CONSTRAINT DF_CheckoutGroup_Discount DEFAULT (0),
     shippingFee       DECIMAL(18,2) NOT NULL CONSTRAINT DF_CheckoutGroup_Shipping DEFAULT (0),
+    taxAmount          DECIMAL(18,2) NOT NULL CONSTRAINT DF_Group_Tax DEFAULT (0),
     totalAmount       DECIMAL(18,2) NOT NULL,
     currency          NVARCHAR(10) NOT NULL CONSTRAINT DF_CheckoutGroup_Currency DEFAULT N'VND',
     status            NVARCHAR(20) NOT NULL CONSTRAINT DF_CheckoutGroup_Status DEFAULT N'PENDING',
@@ -377,8 +437,8 @@ CREATE TABLE dbo.CheckoutGroup (
         (buyerId IS NULL AND guestEmail IS NOT NULL AND LEN(LTRIM(RTRIM(guestEmail))) > 0)),
     CONSTRAINT CK_CheckoutGroup_Money CHECK (
         subtotal >= 0 AND discountAmount >= 0 AND discountAmount <= subtotal
-        AND shippingFee >= 0 AND totalAmount >= 0
-        AND totalAmount = subtotal - discountAmount + shippingFee),
+        AND shippingFee >= 0 AND taxAmount >= 0 AND totalAmount >= 0
+        AND totalAmount = subtotal - discountAmount + shippingFee + taxAmount),
     CONSTRAINT CK_CheckoutGroup_Status CHECK (status IN (N'PENDING', N'CONFIRMED', N'CANCELLED', N'EXPIRED')),
     CONSTRAINT CK_CheckoutGroup_Deadline CHECK (paymentDeadline IS NULL OR paymentDeadline > createdAt)
 );
@@ -409,6 +469,7 @@ CREATE TABLE dbo.OrderTable (
     subtotal             DECIMAL(18,2) NOT NULL,
     discountAmount       DECIMAL(18,2) NOT NULL CONSTRAINT DF_Order_Discount DEFAULT (0),
     shippingFee          DECIMAL(18,2) NOT NULL CONSTRAINT DF_Order_Shipping DEFAULT (0),
+    taxAmount             DECIMAL(18,2) NOT NULL CONSTRAINT DF_Order_Tax DEFAULT (0),
     totalAmount          DECIMAL(18,2) NOT NULL,
     currency             NVARCHAR(10) NOT NULL CONSTRAINT DF_Order_Currency DEFAULT N'VND',
     status               NVARCHAR(20) NOT NULL CONSTRAINT DF_Order_Status DEFAULT N'PLACED',
@@ -422,8 +483,8 @@ CREATE TABLE dbo.OrderTable (
     CONSTRAINT FK_Order_ShippingOption FOREIGN KEY (shippingOptionId) REFERENCES dbo.ShippingOption(id),
     CONSTRAINT CK_Order_Money CHECK (
         subtotal >= 0 AND discountAmount >= 0 AND discountAmount <= subtotal
-        AND shippingFee >= 0 AND totalAmount >= 0
-        AND totalAmount = subtotal - discountAmount + shippingFee),
+        AND shippingFee >= 0 AND taxAmount >= 0 AND totalAmount >= 0
+        AND totalAmount = subtotal - discountAmount + shippingFee + taxAmount),
     CONSTRAINT CK_Order_Status CHECK (status IN (N'PLACED', N'CONFIRMED', N'COMPLETED', N'CANCELLED')),
     CONSTRAINT CK_Order_Contact CHECK (
         LEN(LTRIM(RTRIM(shippingFullName))) > 0 AND LEN(LTRIM(RTRIM(shippingEmail))) > 0
@@ -588,7 +649,7 @@ CREATE INDEX IX_ReturnRequestItem_OrderItem ON dbo.ReturnRequestItem(orderItemId
 GO
 
 -- ===========================================================
--- F. REVIEWS / FEEDBACK / NOTIFICATIONS (3)
+-- F. REVIEWS / FEEDBACK / NOTIFICATIONS (4)
 -- ===========================================================
 CREATE TABLE dbo.Review (
     id               BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT PK_Review PRIMARY KEY,
@@ -627,6 +688,24 @@ GO
 CREATE INDEX IX_SellerFeedback_SellerCreated ON dbo.SellerFeedback(sellerId, createdAt DESC);
 GO
 
+CREATE TABLE dbo.BuyerFeedback (
+    id               BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT PK_BuyerFeedback PRIMARY KEY,
+    orderId          BIGINT NOT NULL,
+    buyerId          INT NOT NULL,
+    sellerId         INT NOT NULL,
+    comment          NVARCHAR(MAX) NOT NULL,
+    createdAt        DATETIME2(3) NOT NULL CONSTRAINT DF_BuyerFeedback_CreatedAt DEFAULT SYSUTCDATETIME(),
+    CONSTRAINT FK_BuyerFeedback_Order FOREIGN KEY (orderId) REFERENCES dbo.OrderTable(id),
+    CONSTRAINT FK_BuyerFeedback_Buyer FOREIGN KEY (buyerId) REFERENCES dbo.[User](id),
+    CONSTRAINT FK_BuyerFeedback_Seller FOREIGN KEY (sellerId) REFERENCES dbo.[User](id),
+    CONSTRAINT UQ_BuyerFeedback_Order UNIQUE (orderId),
+    CONSTRAINT CK_BuyerFeedback_Comment CHECK (LEN(LTRIM(RTRIM(comment))) > 0),
+    CONSTRAINT CK_BuyerFeedback_DifferentUsers CHECK (buyerId <> sellerId)
+);
+GO
+CREATE INDEX IX_BuyerFeedback_BuyerCreated ON dbo.BuyerFeedback(buyerId, createdAt DESC, id DESC);
+GO
+
 CREATE TABLE dbo.Notification (
     id               BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT PK_Notification PRIMARY KEY,
     userId           INT NOT NULL,
@@ -643,6 +722,27 @@ CREATE TABLE dbo.Notification (
 );
 GO
 CREATE INDEX IX_Notification_UserUnread ON dbo.Notification(userId, isRead, createdAt DESC);
+GO
+
+CREATE TABLE dbo.OperationReceipt (
+    scope         NVARCHAR(256) NOT NULL,
+    operationKey  NVARCHAR(100) NOT NULL,
+    requestHash   NVARCHAR(64) NOT NULL,
+    responseJson  NVARCHAR(MAX) NOT NULL,
+    createdAt     DATETIME2 NOT NULL CONSTRAINT DF_OperationReceipt_CreatedAt DEFAULT SYSUTCDATETIME(),
+    CONSTRAINT PK_OperationReceipt PRIMARY KEY (scope, operationKey)
+);
+GO
+
+CREATE TABLE dbo.EmailOutbox (
+    id         BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT PK_EmailOutbox PRIMARY KEY,
+    recipient  NVARCHAR(255) NOT NULL,
+    subject    NVARCHAR(200) NOT NULL,
+    body       NVARCHAR(MAX) NOT NULL,
+    createdAt  DATETIME2 NOT NULL CONSTRAINT DF_EmailOutbox_CreatedAt DEFAULT SYSUTCDATETIME(),
+    sentAt     DATETIME2 NULL,
+    attempts   INT NOT NULL CONSTRAINT DF_EmailOutbox_Attempts DEFAULT (0)
+);
 GO
 
 -- ===========================================================
@@ -681,7 +781,7 @@ GO
 -- VERIFICATION
 -- ===========================================================
 SELECT COUNT(*) AS tableCount
-FROM sys.tables WHERE schema_id = SCHEMA_ID('dbo'); -- expected 30
+FROM sys.tables WHERE schema_id = SCHEMA_ID('dbo'); -- expected 36
 SELECT COUNT(*) AS foreignKeyCount
 FROM sys.foreign_keys WHERE schema_id = SCHEMA_ID('dbo');
 SELECT name AS viewName FROM sys.views WHERE schema_id = SCHEMA_ID('dbo');
@@ -758,8 +858,12 @@ APPLICATION SERVICE / TRANSACTION RULES (NOT AUTOMATICALLY ENFORCED BY THIS DDL)
 7. REVIEWS / RETURNS / REQUESTS:
    - Review requires an authenticated Buyer matching OrderTable.buyerId, matching
      ProductId in OrderItem (non-null), and ShippingInfo.status='DELIVERED'.
-   - SellerFeedback must match Order.sellerId and buyerId=Order.buyerId and require
-     delivered shipping. Independent Listing still supports SellerFeedback.
+   - SellerFeedback is Buyer-to-Seller and must match Order.sellerId and
+     buyerId=Order.buyerId with delivered shipping.
+   - BuyerFeedback is read-only in the Buyer module. It represents positive
+     Seller-to-Buyer feedback and must match Order.sellerId and Order.buyerId
+     with delivered shipping. Creation belongs to the Seller module.
+   - Independent Listing still supports SellerFeedback and BuyerFeedback.
    - CancellationRequest/ReturnRequest requestedBy must own the Order; returns
      may reference only items of THAT order; return qty <= purchased qty and
      cumulative active return quantity must not exceed purchased quantity.

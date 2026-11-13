@@ -17,7 +17,7 @@ Implemented against CloneEbayBuyer; Google Sheet unchanged.
 
 ## Database and runtime
 
-Applied database/upgrades/001-buyer-completion.sql to CloneEbayBuyer without deleting existing rows. It adds authVersion/usernameChangedAt, tax columns, OperationReceipt and EmailOutbox, and updates money constraints to include tax. Readiness checks connectivity and the new schema.
+The complete `CloneEbayBuyer` schema is maintained in `database/CloneEbayBuyer.sql`. It includes authVersion/usernameChangedAt, tax columns, OperationReceipt and EmailOutbox, and money constraints that include tax. Readiness checks connectivity and the complete schema.
 
 Local API restarted at http://localhost:5127, FE at http://127.0.0.1:5173. Existing JWTs require sign-in again. Confirmed seed.buyer01@example.test / Demo@12345 login succeeds. Demo users keep existing passwords.
 
