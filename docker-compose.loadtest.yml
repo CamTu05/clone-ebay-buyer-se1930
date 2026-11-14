@@ -1,0 +1,99 @@
+name: ebay-clone-buyer-loadtest
+
+x-api-common: &api-common
+  image: ebay-clone-buyer-api:loadtest
+  environment: &api-environment
+    ASPNETCORE_ENVIRONMENT: Production
+    Jwt__SigningKey: ${JWT_SIGNING_KEY:-LoadTest-JWT-Signing-Key-At-Least-32-Characters}
+    ConnectionStrings__BuyerDatabase: Server=sqlserver,1433;Database=CloneEbayBuyer;User Id=sa;Password=${SA_PASSWORD:-LoadTestSqlPassword123!};TrustServerCertificate=True
+    BuyerLifecycle__Enabled: "false"
+    EmailOutbox__Enabled: "false"
+    Payments__EnableMock: "true"
+    RateLimiting__PermitLimit: "100000"
+    RateLimiting__WindowSeconds: "60"
+    RateLimiting__LoginPermitLimit: "10000"
+    RateLimiting__LoginWindowSeconds: "60"
+  depends_on:
+    db-init:
+      condition: service_completed_successfully
+  healthcheck:
+    test: ["CMD", "curl", "-f", "http://localhost:8080/health/ready"]
+    interval: 5s
+    timeout: 5s
+    retries: 20
+    start_period: 10s
+  restart: unless-stopped
+  networks: [buyer-loadtest]
+
+services:
+  api1:
+    <<: *api-common
+    environment:
+      <<: *api-environment
+      ApiInstance: api-1
+
+  api2:
+    <<: *api-common
+    environment:
+      <<: *api-environment
+      ApiInstance: api-2
+
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "8080:80"
+      - "8081:81"
+    volumes:
+      - ./infrastructure/nginx/loadtest.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      api1:
+        condition: service_healthy
+      api2:
+        condition: service_healthy
+    restart: unless-stopped
+    networks: [buyer-loadtest]
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${SA_PASSWORD:-LoadTestSqlPassword123!}
+      MSSQL_MEMORY_LIMIT_MB: "1024"
+    volumes:
+      - buyer-loadtest-sql-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q \"SELECT 1\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+    networks: [buyer-loadtest]
+
+  db-init:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    environment:
+      SQLCMDPASSWORD: ${SA_PASSWORD:-LoadTestSqlPassword123!}
+    volumes:
+      - ./database:/scripts:ro
+    entrypoint: ["/bin/bash", "-c", "tr -d '\\r' < /scripts/bootstrap.sh | /bin/bash"]
+    networks: [buyer-loadtest]
+
+  worker:
+    <<: *api-common
+    profiles: [workers]
+    environment:
+      <<: *api-environment
+      ApiInstance: background-worker
+      BuyerLifecycle__Enabled: "true"
+      EmailOutbox__Enabled: "true"
+
+volumes:
+  buyer-loadtest-sql-data:
+
+networks:
+  buyer-loadtest:
+    driver: bridge
