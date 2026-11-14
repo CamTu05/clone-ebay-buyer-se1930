@@ -7,3 +7,26 @@
 @media(max-width:900px){.eb-feedback-layout{grid-template-columns:1fr}.eb-feedback-seller{border-right:0;border-bottom:1px solid #ddd;padding:0 0 28px}.eb-feedback-panel{padding:28px 0 0}}
 @media(max-width:760px){.eb-catalog-layout{display:block}.eb-catalog-sidebar{display:none}.eb-results-heading h1{font-size:21px}.eb-saved-link{font-size:12px}.eb-results-toolbar{gap:10px;flex-wrap:wrap}.eb-buying-tabs button{padding:8px 13px}.eb-result-view select{max-width:155px;font-size:12px}.eb-result-card{gap:16px;min-height:190px}.eb-result-picture{flex-basis:170px;width:170px}.eb-result-title h2{font-size:16px}.eb-result-price{font-size:21px}.eb-result-format{margin-bottom:12px}.eb-result-details{margin-top:15px}.eb-product-overview{display:flex;flex-direction:column;gap:25px}.eb-product-gallery{position:static;width:100%;max-width:600px;margin:auto}.eb-product-purchase{width:100%}.eb-product-purchase h1{font-size:23px}.eb-item-information{margin-top:30px}.eb-detail-tabs{gap:25px;padding:0 20px}.eb-detail-tabs button{font-size:14px}.eb-item-specifics,.eb-item-description{padding:22px 20px}.eb-item-specifics h2,.eb-item-description h2{font-size:20px}.eb-item-number{position:static;display:block;margin:-10px 0 22px}.eb-image-dialog{padding:20px}.eb-expanded-image{height:60vh}}
 @media(max-width:440px){.eb-result-picture{flex-basis:130px;width:130px}.eb-result-card{gap:12px;min-height:160px;padding:16px 0}.eb-result-title h2{font-size:15px}.eb-result-price{font-size:18px}.eb-watch-button{width:31px;height:31px;right:7px;top:7px}.eb-watch-button svg{width:17px;height:17px}.eb-result-format{font-size:12px;margin-bottom:8px}.eb-result-price-label{font-size:12px}.eb-result-meta{align-items:start}.eb-result-meta>span{max-width:50%}.eb-results-toolbar{gap:14px}.eb-result-view{margin-left:auto}.eb-grid-results{gap:13px}.eb-grid-results .eb-result-title h2{font-size:14px}.eb-grid-results .eb-result-price{font-size:17px}.eb-results-heading{align-items:start}.eb-saved-link{font-size:0}.eb-saved-link svg{width:23px;height:23px}.eb-pagination{gap:8px}.eb-pagination button{width:35px;height:35px}.eb-breadcrumb{margin-bottom:18px}}
+
+/* eBay-style Urgency / Social Proof Badge */
+.eb-urgency-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background-color: #fce8e8;
+  color: #c90000;
+  border-left: 3px solid #e01020;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+  margin: 10px 0 16px 0;
+  width: fit-content;
+  box-shadow: 0 1px 3px rgba(224, 16, 32, 0.08);
+}
+.eb-urgency-badge .eb-urgency-icon {
+  flex-shrink: 0;
+  color: #e01020;
+}
+

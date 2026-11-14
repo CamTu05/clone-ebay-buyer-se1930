@@ -1,4 +1,5 @@
 import { mergeLocal } from '../cart/localCart'
+import { notifyCartUpdated } from '../cart/cartStore'
 import { apiClient } from '../../shared/api/apiClient'
 import { setWatchlistAccount } from '../watchlist/watchlistStore'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -20,6 +21,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAccessToken(null)
     setWatchlistAccount(null)
     setUser(null)
+    notifyCartUpdated()
   }, [])
 
   const acceptLogin = useCallback(async (result: LoginData) => {
@@ -31,6 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(result.user)
     setWatchlistAccount(result.user.id)
     await mergeLocal()
+    notifyCartUpdated()
 
     const scheduleExpiration = () => {
       const remaining = expiresAt - Date.now()

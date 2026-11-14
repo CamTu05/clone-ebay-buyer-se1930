@@ -4,3 +4,67 @@
 @media(max-width:800px){.site-width{padding-left:20px;padding-right:20px}.utility-left>a{display:none}.utility-right{gap:14px}.utility-right>.menu-anchor:first-of-type{display:none}.search-row{flex-wrap:wrap;gap:14px;padding-top:12px;padding-bottom:16px}.ebay-logo{width:95px;height:39px}.category-anchor{margin-left:auto}.global-search{flex-basis:100%}.search-field select,.advanced-link,.image-search{display:none}.search-submit{min-width:85px}.category-menu{left:auto;right:0;width:min(90vw,500px)}.category-nav>div{height:45px}.home-hero{height:340px}.hero-copy{padding:60px 30px;max-width:440px}.hero-copy h1{font-size:30px}.hero-copy p{max-width:300px}.hero-background{object-position:65% center}.photo:after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,#0007,transparent)}.hero-controls,.hero-dots{z-index:2}.category-tiles{display:flex;overflow:auto;gap:16px;padding-bottom:8px}.category-tiles>a{flex:0 0 145px}.home-section{margin-top:36px}.shopping-banner{margin:38px 0;padding:25px}.shopping-banner h2{font-size:25px}.shopping-banner p{font-size:14px}.perks-banner{height:290px}.perks-banner>div{padding:65px 30px}.perks-banner h2{font-size:28px;max-width:390px}.perks-banner p{max-width:330px;font-size:14px}.bottom-banner>div{padding:30px}.bottom-banner h2{font-size:27px}.footer-columns{grid-template-columns:repeat(3,1fr)}.activity-layout{grid-template-columns:1fr}.activity-nav{flex-direction:row;overflow:auto;white-space:nowrap}.saved-grid{grid-template-columns:repeat(2,1fr)}.help-topics{grid-template-columns:repeat(2,1fr)}.home-catalog-message{flex-wrap:wrap}.home-catalog-message .pill{margin-left:0}}
 @media(max-width:480px){.utility-inner{font-size:11px}.utility-right{gap:10px}.utility-right>.icon-button:first-of-type{display:none}.global-search{gap:8px}.search-field{padding-left:12px;gap:6px}.search-field input{font-size:14px}.home-main{padding-left:12px;padding-right:12px}.hero-copy{padding:45px 22px}.hero-copy h1{font-size:28px;max-width:255px}.hero-copy p{font-size:14px;max-width:230px}.home-hero{height:355px}.hero-controls{right:18px}.hero-dots{left:25px;bottom:28px}.category-tiles>a{flex-basis:125px}.home-section h2{font-size:22px}.shopping-banner{align-items:flex-start;flex-direction:column}.perks-banner h2{max-width:270px}.perks-banner>div{padding:38px 24px}.perks-banner>img{object-position:65% center}.section-heading{align-items:flex-start}.section-heading>a{font-size:13px}.bottom-banner{flex-direction:column;align-items:stretch}.bottom-banner img{width:100%;max-height:220px}.footer-columns{grid-template-columns:repeat(2,1fr)}.footer-legal{gap:12px;margin-top:28px}.help-banner,.discovery-banner{padding:30px 22px}.help-banner h1,.discovery-banner h1{font-size:30px}.help-topics{grid-template-columns:1fr}.saved-grid{gap:16px}.saved-title{font-size:14px}.saved-price{font-size:17px}.empty-state{padding:45px 20px}.simple-header-inner{min-height:80px}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+
+/* Real-time cart badge styling */
+.header-cart-button {
+  position: relative;
+  text-decoration: none !important;
+  color: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-cart-icon-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-cart-badge {
+  position: absolute;
+  top: -8px;
+  right: -10px;
+  background: #e01020;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  line-height: 18px;
+  padding: 0 5px;
+  border-radius: 10px;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+  transform: scale(1);
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.2s ease;
+  z-index: 10;
+}
+
+.header-cart-badge.bump {
+  animation: cart-badge-bump 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes cart-badge-bump {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.45);
+    background: #ff1a30;
+    box-shadow: 0 2px 8px rgba(224, 16, 32, 0.5);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+    background: #e01020;
+  }
+}
+

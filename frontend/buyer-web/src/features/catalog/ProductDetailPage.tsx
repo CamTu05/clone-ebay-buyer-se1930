@@ -1,6 +1,7 @@
 import { AuctionLivePanel } from '../AuctionPages'
 import { ReviewsPanel } from './ReviewsPanel'
 import { addLocal } from '../cart/localCart'
+import { incrementCartCount, notifyCartUpdated } from '../cart/cartStore'
 import { useAuth } from '../authentication/useAuth'
 import { buyerPost, buyerError } from '../buyerApi'
 import { useEffect, useRef, useState } from 'react'
@@ -24,14 +25,88 @@ export function ProductDetailPage() {
   const [maximumBid, setMaximumBid] = useState('')
   const [actionError, setActionError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [addedSuccess, setAddedSuccess] = useState(false)
+  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (successTimerRef.current) clearTimeout(successTimerRef.current)
+    }
+  }, [])
+
   async function purchase(auction: boolean) {
-    if (!isAuthenticated) { if (!auction && summary) { addLocal(summary); navigate('/cart') } else navigate('/login', {state:{from:{pathname:'/products/'+productId}}}); return }
+    if (auction) {
+      if (!isAuthenticated) {
+        navigate('/login', { state: { from: { pathname: '/products/' + productId } } })
+        return
+      }
+      if (!listing || !listing.auctionId || !maximumBid) return
+      setBusy(true)
+      setActionError('')
+      try {
+        await buyerPost('/api/auctions/' + listing.auctionId + '/bids', { maximumBid: Number(maximumBid) })
+        setAttempt(x => x + 1)
+      } catch (e) {
+        setActionError(buyerError(e))
+      } finally {
+        setBusy(false)
+      }
+      return
+    }
+
     if (!listing) return
-    setBusy(true); setActionError('')
+    setActionError('')
+
+    // Instant real-time increment on cart badge & visual feedback
+    incrementCartCount(1)
+    setAddedSuccess(true)
+    if (successTimerRef.current) clearTimeout(successTimerRef.current)
+    successTimerRef.current = setTimeout(() => {
+      setAddedSuccess(false)
+    }, 3000)
+
+    // Optimistically update urgency badge if displaying in-cart info
+    setResponse(prev => {
+      if (!prev?.product?.urgencyBadge) return prev
+      const badge = prev.product.urgencyBadge
+      const nextCount = badge.inCartCount + 1
+      let nextText = badge.text
+      if (badge.badgeType === 'BOTH') {
+        nextText = `In ${nextCount} carts · ${badge.soldCount} sold`
+      } else if (badge.badgeType === 'CART') {
+        nextText = `In ${nextCount} carts`
+      }
+      return {
+        ...prev,
+        product: {
+          ...prev.product,
+          urgencyBadge: {
+            ...badge,
+            inCartCount: nextCount,
+            text: nextText,
+            show: true,
+          },
+        },
+      }
+    })
+
+    if (!isAuthenticated) {
+      if (summary) {
+        addLocal(summary)
+      }
+      return
+    }
+
+    setBusy(true)
     try {
-      if (auction) { await buyerPost('/api/auctions/' + listing.auctionId + '/bids', { maximumBid: Number(maximumBid) }); setAttempt(x => x + 1) }
-      else { await buyerPost('/api/cart/items', { listingId: listing.listingId, quantity: 1 }); navigate('/cart') }
-    } catch (e) { setActionError(buyerError(e)) } finally { setBusy(false) }
+      await buyerPost('/api/cart/items', { listingId: listing.listingId, quantity: 1 })
+      notifyCartUpdated()
+    } catch (e) {
+      setActionError(buyerError(e))
+      notifyCartUpdated()
+    } finally {
+      setBusy(false)
+    }
   }
   const [attempt, setAttempt] = useState(0)
   const requestKey = `${productId}:${attempt}`
@@ -72,11 +147,55 @@ export function ProductDetailPage() {
           </div>
           <div className="eb-product-purchase">
             <h1>{product.name}</h1>
+            {product.urgencyBadge && product.urgencyBadge.show && (
+              <div className="eb-urgency-badge" role="status" aria-label={product.urgencyBadge.text}>
+                <svg className="eb-urgency-icon" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M12 23c-4.97 0-9-3.95-9-8.82 0-3.61 2.22-6.73 3.65-8.41.34-.4.95-.44 1.35-.09.39.34.43.94.1 1.34-1.2 1.41-3.1 4.07-3.1 7.16 0 3.76 3.14 6.82 7 6.82 3.86 0 7-3.06 7-6.82 0-2.45-1.12-4.57-2.07-6.04-.32-.49-.18-1.14.31-1.46.49-.32 1.15-.17 1.46.32 1.19 1.83 2.3 4.29 2.3 7.18 0 4.87-4.03 8.82-9 8.82zm.5-4c-2.48 0-4.5-1.95-4.5-4.36 0-1.84 1.16-3.48 1.9-4.37.33-.4.93-.45 1.33-.12.4.33.45.92.12 1.32-.57.69-1.35 1.94-1.35 3.17 0 1.3 1.12 2.36 2.5 2.36s2.5-1.06 2.5-2.36c0-.98-.55-2.01-.98-2.69-.32-.5-.17-1.15.33-1.47.5-.32 1.15-.17 1.47.33.64 1 1.18 2.3 1.18 3.83 0 2.41-2.02 4.36-4.5 4.36z"/>
+                </svg>
+                <span>{product.urgencyBadge.text}</span>
+              </div>
+            )}
             {listing && <div className="eb-product-seller"><span className="eb-seller-avatar" aria-hidden="true">{listing.seller.username.slice(0, 1).toUpperCase()}</span><div><h2>{listing.seller.storeName ?? listing.seller.username}</h2><p>Seller: {listing.seller.username}</p></div></div>}
             {product.listings.length > 1 && <label className="eb-listing-select">Choose a listing<select value={listing?.listingId} onChange={event => setListingSelection({ key: requestKey, id: Number(event.target.value) })}>{product.listings.map(item => <option key={item.listingId} value={item.listingId}>{item.seller.storeName ?? item.seller.username} · {item.listingType === 'AUCTION' ? 'Auction' : 'Buy It Now'} · {item.price === null ? 'Price unavailable' : priceFormat.format(item.price)}</option>)}</select></label>}
             {listing?.auctionId && <AuctionLivePanel auctionId={listing.auctionId}/>}<div className="eb-product-price-block"><p className="eb-product-price">{listing?.price !== null && listing?.price !== undefined ? priceFormat.format(listing.price) : 'Price unavailable'}</p>{listing && <p>{listing.listingType === 'AUCTION' ? 'Current bid · Auction' : 'Buy It Now'}</p>}</div>
             <dl className="eb-product-condition"><dt>Condition:</dt><dd>{listing?.condition || product.condition || 'Not specified'}</dd>{product.brand && <><dt>Brand:</dt><dd>{product.brand}</dd></>}</dl>
-            {listing ? <div className="eb-purchase-actions">{listing.listingType === 'FIXED_PRICE' && <button className="eb-blue-button" type="button" disabled={busy} onClick={() => navigate(`/checkout?listingId=${listing.listingId}&quantity=1`)}>Buy It Now</button>}{listing.listingType === 'AUCTION' && <label>Your maximum bid (VND)<input type="number" min="1" value={maximumBid} onChange={e => setMaximumBid(e.target.value)} /></label>}<button className="eb-blue-button" type="button" disabled={busy || (listing.listingType === 'AUCTION' && (!listing.auctionId || !maximumBid))} onClick={() => void purchase(listing.listingType === 'AUCTION')}>{busy ? 'Please wait…' : listing.listingType === 'AUCTION' ? 'Place bid' : 'Add to cart'}</button>{(actionError || watchlist.error) && <p role="alert">{actionError || watchlist.error}</p>}<button className="eb-outline-button eb-watch-detail" type="button" disabled={!summary} aria-pressed={watchlist.has(product.productId)} onClick={() => summary && watchlist.toggle(summary)}><HeartIcon filled={watchlist.has(product.productId)} />{watchlist.has(product.productId) ? 'Added to Watchlist' : 'Add to Watchlist'}</button></div> : <div className="eb-no-listing">This item has no active listings. <Link to="/catalog">Explore similar items</Link></div>}
+            {listing ? <div className="eb-purchase-actions">
+              {listing.listingType === 'FIXED_PRICE' && <button className="eb-blue-button" type="button" disabled={busy} onClick={() => navigate(`/checkout?listingId=${listing.listingId}&quantity=1`)}>Buy It Now</button>}
+              {listing.listingType === 'AUCTION' && <label>Your maximum bid (VND)<input type="number" min="1" value={maximumBid} onChange={e => setMaximumBid(e.target.value)} /></label>}
+              <button
+                className={`eb-blue-button ${addedSuccess ? 'eb-button-success' : ''}`}
+                type="button"
+                disabled={busy || (listing.listingType === 'AUCTION' && (!listing.auctionId || !maximumBid))}
+                onClick={() => void purchase(listing.listingType === 'AUCTION')}
+                style={addedSuccess ? { backgroundColor: '#107c10', borderColor: '#107c10', color: '#fff' } : undefined}
+              >
+                {busy ? 'Please wait…' : listing.listingType === 'AUCTION' ? 'Place bid' : addedSuccess ? '✓ Added to cart' : 'Add to cart'}
+              </button>
+              {addedSuccess && (
+                <div
+                  role="status"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    background: '#e6f4ea',
+                    color: '#137333',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    marginTop: '8px',
+                    fontWeight: 500,
+                  }}
+                >
+                  <span>Item added to your cart!</span>
+                  <Link to="/cart" style={{ color: '#0968f6', textDecoration: 'underline', fontWeight: 600, marginLeft: '12px' }}>
+                    View in cart →
+                  </Link>
+                </div>
+              )}
+              {(actionError || watchlist.error) && <p role="alert">{actionError || watchlist.error}</p>}
+              <button className="eb-outline-button eb-watch-detail" type="button" disabled={!summary} aria-pressed={watchlist.has(product.productId)} onClick={() => summary && watchlist.toggle(summary)}><HeartIcon filled={watchlist.has(product.productId)} />{watchlist.has(product.productId) ? 'Added to Watchlist' : 'Add to Watchlist'}</button>
+            </div> : <div className="eb-no-listing">This item has no active listings. <Link to="/catalog">Explore similar items</Link></div>}
             <div className="eb-product-delivery"><div><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="M3 6h12v11H3zM15 10h3l3 4v3h-6" /><circle cx="7" cy="18" r="2" fill="white" /><circle cx="18" cy="18" r="2" fill="white" /></svg><p><strong>Shipping</strong><span>Delivery details have not been provided.</span></p></div><div><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="M3 10a9 9 0 1 1 1 8M3 4v6h6" /></svg><p><strong>Returns</strong><span>Check the listing description for return information.</span></p></div></div>
           </div>
         </div>

@@ -1,12 +1,13 @@
 import { useSyncExternalStore } from 'react'
 import type { ProductSummary } from '../catalog/types'
 import { apiClient } from '../../shared/api/apiClient'
+import { notifyCartUpdated } from './cartStore'
 export type LocalItem=ProductSummary & {quantity:number}
 const key='buyer.guest-cart.v1';const listeners=new Set<()=>void>()
 function read():LocalItem[]{try{const raw=JSON.parse(localStorage.getItem(key)??'[]');return Array.isArray(raw)?raw.filter(x=>Number.isSafeInteger(x.listingId)&&x.listingId>0&&Number.isInteger(x.quantity)&&x.quantity>0&&x.quantity<=1000&&typeof x.name==='string').slice(0,100):[]}catch{return []}}
 let items=read();let message='';
 function emit(){listeners.forEach(f=>f())}
-function save(next:LocalItem[]){items=next;try{localStorage.setItem(key,JSON.stringify(next))}catch{message='Browser storage unavailable. Keep this tab open.'}emit()}
+function save(next:LocalItem[]){items=next;try{localStorage.setItem(key,JSON.stringify(next))}catch{message='Browser storage unavailable. Keep this tab open.'}emit();notifyCartUpdated()}
 export function addLocal(product:ProductSummary){const current=items.find(x=>x.listingId===product.listingId);save(current?items.map(x=>x.listingId===product.listingId?{...x,quantity:Math.min(1000,x.quantity+1)}:x):[...items,{...product,quantity:1}])}
 export function clearLocal(){save([])}
 export async function mergeLocal(){
