@@ -58,7 +58,42 @@ public sealed class BuyerCompletionController(BuyerSchemaContext db, BuyerWorkfl
         await db.SaveChangesAsync(ct); await tx.CommitAsync(ct); return Success(result);
     }
     [HttpGet("products/{id:int}/reviews")]
-    public async Task<object> Reviews(int id, CancellationToken ct) => Success(await db.Reviews.AsNoTracking().Where(x => x.productId == id).OrderByDescending(x => x.id).Take(100).Select(x => new { x.id, x.rating, x.comment, x.createdAt, buyer = x.reviewer.username }).ToListAsync(ct));
+    public async Task<object> Reviews(int id, CancellationToken ct)
+    {
+        var scope = db.Reviews.AsNoTracking().Where(review => review.productId == id);
+        var summary = await scope.GroupBy(_ => 1).Select(group => new
+        {
+            total = group.Count(),
+            averageRating = group.Average(review => (decimal)review.rating),
+            five = group.Count(review => review.rating == 5),
+            four = group.Count(review => review.rating == 4),
+            three = group.Count(review => review.rating == 3),
+            two = group.Count(review => review.rating == 2),
+            one = group.Count(review => review.rating == 1)
+        }).SingleOrDefaultAsync(ct);
+        var items = await scope.OrderByDescending(review => review.createdAt).ThenByDescending(review => review.id).Take(100)
+            .Select(review => new
+            {
+                review.id,
+                review.rating,
+                review.comment,
+                review.createdAt,
+                buyer = review.reviewer.username,
+                seller = review.orderItem.order.seller.username,
+                condition = review.orderItem.listing.itemCondition,
+                verifiedPurchase = review.orderItem.order.buyerId == review.reviewerId && review.orderItem.order.ShippingInfo != null && review.orderItem.order.ShippingInfo.status == "DELIVERED"
+            }).ToListAsync(ct);
+        return Success(new
+        {
+            summary = new
+            {
+                total = summary?.total ?? 0,
+                averageRating = summary == null ? (decimal?)null : decimal.Round(summary.averageRating, 1),
+                distribution = new { five = summary?.five ?? 0, four = summary?.four ?? 0, three = summary?.three ?? 0, two = summary?.two ?? 0, one = summary?.one ?? 0 }
+            },
+            items
+        });
+    }
     public sealed record FeedbackInput([Required, RegularExpression("^(POSITIVE|NEUTRAL|NEGATIVE)$")] string Type, [StringLength(2000)] string? Comment);
     [Authorize(Roles = "BUYER"), HttpPost("orders/{id:long}/seller-feedback")]
     public async Task<object> Feedback(long id, FeedbackInput r, CancellationToken ct)

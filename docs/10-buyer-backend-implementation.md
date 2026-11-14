@@ -44,13 +44,13 @@ Frontend đọc `VITE_API_BASE_URL`, mặc định http://localhost:5127. Phải
 | Thông báo | GET `/api/notifications`, PATCH `/api/notifications/{id}/read`; đúng tài khoản |
 | Đấu giá | GET `/api/auctions/{id}`, POST `/api/auctions/{id}/bids`; proxy maximum bid, increment, tie theo thời gian/id; không công khai maximum của người khác |
 
-Các giao dịch checkout/payment/bid dùng Serializable; cạnh tranh gây deadlock/unique conflict trả 409 để client tải lại và thử lại. Không giữ stock khi chỉ thêm giỏ. Checkout PayPal giữ stock 15 phút; COD tạo đơn CONFIRMED nhưng payment PENDING, không giả trạng thái đã thu tiền.
+Các giao dịch checkout/payment/bid dùng Serializable; cạnh tranh gây deadlock/unique conflict trả 409 để client tải lại và thử lại. Không giữ stock khi chỉ thêm giỏ. Checkout PayPal giữ stock 15 phút; checkout mới không hỗ trợ COD.
 
 Worker `BuyerLifecycle:Enabled=true` xử lý mỗi 30 giây: checkout quá hạn hoàn tồn kho, auction đến hạn xác định winner. Đã bật trong Development; môi trường khác cần bật cấu hình này. Các test endpoint dùng mock/SQLite tắt worker để tách biệt dữ liệu. Khi tắt, checkout quá hạn không trả tiền được nhưng cần hủy để giải phóng stock.
 
 ## Giới hạn rõ ràng
 
-- Không tích hợp thanh toán PayPal thật, thu COD, webhook, email, hãng vận chuyển, tax quốc tế hoặc refund thật. Phí ship là flatRate của option trong DB; một seller cần một shipping policy tương thích, mặc định chọn option rẻ nhất.
+- Không tích hợp thanh toán PayPal thật, COD, webhook, email, hãng vận chuyển, tax quốc tế hoặc refund thật. Phí ship là flatRate của option trong DB; một seller cần một shipping policy tương thích, mặc định chọn option rẻ nhất.
 - Cancellation/return tạo yêu cầu chờ xử lý; duyệt yêu cầu/refund thuộc seller/admin, chưa triển khai ở module Buyer này.
 - Auction đã có đặt giá và kết thúc; chưa chuyển winner thành checkout để thanh toán.
 - Chưa có đăng ký/email verification, social login, guest checkout, Best Offer, saved searches, chat và bộ lọc thuộc tính chuyên biệt.
@@ -79,7 +79,7 @@ Không coi build/API tests là kiểm chứng giao diện trình duyệt hoặc 
 
 ### Buy It Now
 
-Nút Buy It Now ở listing FIXED_PRICE mở /checkout?listingId=...&quantity=1; nếu chưa đăng nhập sẽ quay lại checkout sau đăng nhập. POST /api/checkout/preview và /api/checkout nhận thêm listingId (tùy chọn), quantity (1–1000). Khi có listingId, backend chỉ mua listing đó, không thêm/xóa giỏ. Khi thiếu listingId, giữ nguyên luồng checkout giỏ. Preview không tạo đơn/giữ tồn kho; Place order mới tạo đơn. COD xác nhận chờ thu tiền, PayPal PENDING đến khi thanh toán mô phỏng. Script scripts/buyer-buy-now-smoke.mjs đã qua 22 assertions trên DB test, gồm bảo toàn giỏ, tồn kho, preview, COD/PayPal và dữ liệu không hợp lệ.
+Nút Buy It Now ở listing FIXED_PRICE mở /checkout?listingId=...&quantity=1; nếu chưa đăng nhập sẽ quay lại checkout sau đăng nhập. POST /api/checkout/preview và /api/checkout nhận thêm listingId (tùy chọn), quantity (1–1000). Khi có listingId, backend chỉ mua listing đó, không thêm/xóa giỏ. Khi thiếu listingId, giữ nguyên luồng checkout giỏ. Preview không tạo đơn/giữ tồn kho; Place order mới tạo đơn. PayPal giữ checkout ở PENDING đến khi thanh toán mô phỏng thành công. Script scripts/buyer-buy-now-smoke.mjs đã qua 22 assertions trên DB test, gồm bảo toàn giỏ, tồn kho, preview, COD/PayPal và dữ liệu không hợp lệ.
 
 
 ## Cập nhật triển khai tiếp theo

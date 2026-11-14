@@ -256,7 +256,7 @@ Product list/detail request, response, visibility and error contracts are docume
 - Shipping `FREE`, `FLAT_RATE`, `CALCULATED`; tax theo `TaxRegion` giả lập. Đổi address/option phải recalculation.
 - Authenticated và guest checkout đều là P0; guest cung cấp email + địa chỉ giao hàng.
 - Một lần checkout có thể tạo nhiều đơn theo seller: `CheckoutGroup` → `OrderTable` → `OrderItem`.
-- COD tạo payment `PENDING`, không phải `PAID`; order status tách biệt payment status.
+- Checkout mới chỉ chấp nhận `PAYPAL`; giá trị `COD` bị từ chối với `METHOD_INVALID`. Payment mock giữ order `PENDING` cho đến khi thành công hoặc hết hạn.
 - Dữ liệu shipping address, title, unitPrice, fees, tax được snapshot trong đơn.
 
 Implemented authenticated Cart contract:
