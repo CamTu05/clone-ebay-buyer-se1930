@@ -11,7 +11,6 @@ import { clearLocal, useLocalCart } from './cart/localCart'
 import { ProductImage } from './catalog/ProductImage'
 import './account.css'
 
-type PaymentMethod = 'COD' | 'PAYPAL'
 type QuoteItem = { listingId: number; productId: number | null; productTitle: string; quantity: number; unitPrice: number; imageUrl: string | null; sellerId: number }
 type ShippingOption = { id: number; sellerId: number; serviceName: string; flatRate: number; estimatedMinDays: number; estimatedMaxDays: number }
 type Quote = { subtotal: number; discountAmount: number; shippingFee: number; taxAmount: number; totalAmount: number; items: QuoteItem[]; shippingOptions: ShippingOption[] }
@@ -37,7 +36,7 @@ function CheckoutForm({ params }: { params: URLSearchParams }) {
   const [draftAddressId, setDraftAddressId] = useState(0)
   const [addressPanel, setAddressPanel] = useState(false)
   const [editor, setEditor] = useState<AddressEditor>(null)
-  const [method, setMethod] = useState<PaymentMethod>('COD')
+  const method = 'PAYPAL' as const
   const [couponCode, setCoupon] = useState('')
   const [shippingOptions, setShipping] = useState<Record<number, number>>({})
 
@@ -324,30 +323,13 @@ function CheckoutForm({ params }: { params: URLSearchParams }) {
           <section className="checkout-block">
             <h2>Pay with</h2>
             <div className="checkout-payment-options">
-              <label className={method === 'PAYPAL' ? 'selected' : ''}>
-                <input
-                  type="radio"
-                  name="payment"
-                  checked={method === 'PAYPAL'}
-                  onChange={() => setMethod('PAYPAL')}
-                />
+              <div className="selected" role="group" aria-label="Payment method">
+                <span aria-hidden="true">PayPal</span>
                 <span>
                   <strong>PayPal</strong>
                   <small>Simulated payment. No real money is charged.</small>
                 </span>
-              </label>
-              <label className={method === 'COD' ? 'selected' : ''}>
-                <input
-                  type="radio"
-                  name="payment"
-                  checked={method === 'COD'}
-                  onChange={() => setMethod('COD')}
-                />
-                <span>
-                  <strong>Cash on delivery</strong>
-                  <small>Pay when your order is delivered.</small>
-                </span>
-              </label>
+              </div>
             </div>
           </section>
 
@@ -554,41 +536,42 @@ function CheckoutForm({ params }: { params: URLSearchParams }) {
               )
             ) : (
               <div className="checkout-order-list">
-                {quote.items.map(item => (
-                  <article className="checkout-order-item" key={item.listingId}>
-                    <div className="checkout-item-image">
-                      <ProductImage url={item.imageUrl} name={item.productTitle} />
-                    </div>
-                    <div>
-                      <Link to={item.productId ? `/products/${item.productId}` : '#'}>{item.productTitle}</Link>
-                      <p>Condition and seller details are shown on the listing.</p>
-                      <strong>{money(item.unitPrice)}</strong>
-                      <p>Quantity: {item.quantity}</p>
-                    </div>
-                  </article>
-                ))}
+                {[...new Set(quote.items.map(item => item.sellerId))].map(sellerId => {
+                  const sellerItems = quote.items.filter(item => item.sellerId === sellerId)
+                  const sellerOptions = [...new Map(quote.shippingOptions.filter(option => option.sellerId === sellerId).map(option => [option.id, option])).values()]
+                  return <div className="checkout-seller-order" key={sellerId}>
+                    {sellerItems.map(item => <article className="checkout-order-item" key={item.listingId}>
+                      <div className="checkout-item-image">
+                        <ProductImage url={item.imageUrl} name={item.productTitle} />
+                      </div>
+                      <div>
+                        <Link to={item.productId ? `/products/${item.productId}` : '#'}>{item.productTitle}</Link>
+                        <p>Condition and seller details are shown on the listing.</p>
+                        <strong>{money(item.unitPrice)}</strong>
+                        <p>Quantity: {item.quantity}</p>
+                      </div>
+                    </article>)}
+                    {sellerOptions.length > 0 && <label className="checkout-shipping">
+                      Delivery
+                      <select
+                        aria-label={`Delivery option for seller ${sellerId}`}
+                        value={shippingOptions[sellerId] ?? sellerOptions[0].id}
+                        onChange={event => {
+                          const optId = Number(event.target.value)
+                          const next = { ...shippingOptions, [sellerId]: optId }
+                          setShipping(next)
+                          void review({ shippingOptions: next })
+                        }}
+                      >
+                        {sellerOptions.map(option => <option key={option.id} value={option.id}>
+                          {option.serviceName} · {money(option.flatRate)} · {option.estimatedMinDays}-{option.estimatedMaxDays} days
+                        </option>)}
+                      </select>
+                    </label>}
+                  </div>
+                })}
               </div>
             )}
-            {quote && [...new Set(quote.shippingOptions.map(option => option.sellerId))].map(sellerId => (
-              <label className="checkout-shipping" key={sellerId}>
-                Delivery
-                <select
-                  value={shippingOptions[sellerId] ?? ''}
-                  onChange={event => {
-                    const optId = Number(event.target.value)
-                    const next = { ...shippingOptions, [sellerId]: optId }
-                    setShipping(next)
-                    void review({ shippingOptions: next })
-                  }}
-                >
-                  {quote.shippingOptions.filter(option => option.sellerId === sellerId).map(option => (
-                    <option key={option.id} value={option.id}>
-                      {option.serviceName} · {money(option.flatRate)} · {option.estimatedMinDays}-{option.estimatedMaxDays} days
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ))}
           </section>
         </main>
 
@@ -650,7 +633,7 @@ function CheckoutForm({ params }: { params: URLSearchParams }) {
             disabled={busy || (guest && (!guestAddressConfirmed || guestEditing)) || (!guest && !selectedAddress) || !quote}
             onClick={() => void place()}
           >
-            {busy ? 'Please wait…' : method === 'PAYPAL' ? 'Confirm and pay' : 'Confirm and place order'}
+            {busy ? 'Please wait…' : 'Confirm and pay'}
           </button>
 
           <p className="account-note">

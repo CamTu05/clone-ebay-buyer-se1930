@@ -56,7 +56,7 @@ public sealed class BuyerWorkflowService(BuyerSchemaContext db, IConfiguration? 
     public async Task<object> Checkout(int uid, CheckoutRequest r, bool preview, CancellationToken ct)
     {
         if (r.AuctionId != null && (r.ListingId != null || r.Items != null)) throw Fail("SELECTION_INVALID", "Choose a single checkout mode.", 400);
-        if (r.Method != "COD" && r.Method != "PAYPAL") throw Fail("METHOD_INVALID", "Choose COD or PAYPAL.", 400);
+        if (r.Method != "PAYPAL") throw Fail("METHOD_INVALID", "PayPal is the only supported payment method.", 400);
         await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
         if (uid != 0) await RequireBuyer(uid, ct);
         else if (r.Guest == null || !Validator.TryValidateObject(r.Guest, new ValidationContext(r.Guest), null, true)
@@ -143,7 +143,7 @@ public sealed class BuyerWorkflowService(BuyerSchemaContext db, IConfiguration? 
             if (option == null) throw Fail("SHIPPING_UNAVAILABLE", "No valid shipping option for seller.");
             var sub = seller.Sum(x => x.quantity * UnitPrice(x));
             var part = seller == sellers.Last() ? remaining : Math.Min(remaining, (subtotal == 0 ? 0 : decimal.Round(discount * sub / subtotal, 2))); remaining -= part;
-            var order = new OrderTable { buyerId = uid == 0 ? null : uid, sellerId = seller.Key, addressId = uid == 0 ? null : address.id, shippingOptionId = option.id, shippingFullName = address.fullName, shippingEmail = user.email, shippingPhone = address.phone, shippingStreet = address.street, shippingAddressLine2 = address.addressLine2, shippingCity = address.city, shippingState = address.state, shippingPostalCode = address.postalCode, shippingCountry = address.country, shippingCountryCode = address.countryCode, shippingServiceName = option.serviceName, subtotal = sub, discountAmount = part, shippingFee = option.flatRate, totalAmount = sub - part + option.flatRate, currency = "VND", status = r.Method == "COD" ? "CONFIRMED" : "PLACED" };
+            var order = new OrderTable { buyerId = uid == 0 ? null : uid, sellerId = seller.Key, addressId = uid == 0 ? null : address.id, shippingOptionId = option.id, shippingFullName = address.fullName, shippingEmail = user.email, shippingPhone = address.phone, shippingStreet = address.street, shippingAddressLine2 = address.addressLine2, shippingCity = address.city, shippingState = address.state, shippingPostalCode = address.postalCode, shippingCountry = address.country, shippingCountryCode = address.countryCode, shippingServiceName = option.serviceName, subtotal = sub, discountAmount = part, shippingFee = option.flatRate, totalAmount = sub - part + option.flatRate, currency = "VND", status = "PLACED" };
             foreach (var item in seller) order.OrderItems.Add(new OrderItem { order = order, listingId = item.listingId, productId = item.listing.productId, quantity = item.quantity, unitPrice = UnitPrice(item), productTitle = item.listing.title, imageUrl = item.listing.ListingImages.OrderByDescending(x => x.isPrimary).Select(x => x.imageUrl).FirstOrDefault() });
             var taxRate = configuration?.GetValue<decimal>("Checkout:TaxRates:" + address.countryCode?.ToUpperInvariant()) ?? 0m;
             if (taxRate < 0 || taxRate > 1) throw Fail("TAX_CONFIGURATION_INVALID", "Tax rate is not configured correctly.", 503);
@@ -159,12 +159,7 @@ public sealed class BuyerWorkflowService(BuyerSchemaContext db, IConfiguration? 
             var updated = await db.Listings.Where(x => x.id == item.listingId && x.status == (auction == null ? "ACTIVE" : "SOLD") && x.quantity >= item.quantity).ExecuteUpdateAsync(s => s.SetProperty(x => x.quantity, x => x.quantity - item.quantity), ct);
             if (updated != 1) throw Fail("STOCK_CHANGED", "Stock changed; retry checkout.");
         }
-        var group = new CheckoutGroup { buyerId = uid == 0 ? null : uid, guestEmail = uid == 0 ? user.email : null, couponId = coupon?.id, subtotal = subtotal, discountAmount = discount, taxAmount = tax, shippingFee = shipping, totalAmount = subtotal - discount + shipping + tax, currency = "VND", status = r.Method == "COD" ? "CONFIRMED" : "PENDING", createdAt = now, confirmedAt = r.Method == "COD" ? now : null, paymentDeadline = r.Method == "PAYPAL" ? now.AddMinutes(15) : null, OrderTables = orders };
-        if (r.Method == "COD")
-        {
-            group.Payments.Add(new Payment { amount = group.totalAmount, method = "COD", status = "PENDING", provider = "COD" });
-            if (coupon != null) { coupon.usageCount++; group.CouponUsage = new CouponUsage { couponId = coupon.id, userId = uid == 0 ? null : uid, discountAmount = discount }; }
-        }
+        var group = new CheckoutGroup { buyerId = uid == 0 ? null : uid, guestEmail = uid == 0 ? user.email : null, couponId = coupon?.id, subtotal = subtotal, discountAmount = discount, taxAmount = tax, shippingFee = shipping, totalAmount = subtotal - discount + shipping + tax, currency = "VND", status = "PENDING", createdAt = now, confirmedAt = null, paymentDeadline = now.AddMinutes(15), OrderTables = orders };
         db.CheckoutGroups.Add(group);
         if (uid != 0 && !r.ListingId.HasValue && r.AuctionId == null) db.CartItems.RemoveRange(items);
         if (uid != 0) db.Notifications.Add(new Notification { userId = uid, type = "ORDER_CREATED", title = "Order created", content = "Your checkout has been created." });

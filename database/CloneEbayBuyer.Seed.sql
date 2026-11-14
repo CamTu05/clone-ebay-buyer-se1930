@@ -119,7 +119,7 @@ BEGIN TRY
   VALUES(@group,@price-@discount+30000,N'PAYPAL',N'MOCK',CONCAT(N'SEED-PAY-',@group),CASE WHEN @i=8 THEN N'FAILED' ELSE N'PAID' END,CASE WHEN @i<8 THEN DATEADD(day,-10,@now) END,DATEADD(day,-10,@now));
   INSERT dbo.ShippingInfo(orderId,carrier,trackingNumber,status,shippedAt,deliveredAt)
   VALUES(@order,N'Demo Carrier',CONCAT(N'DEMO-',@order),CASE WHEN @i<=4 THEN N'DELIVERED' WHEN @i=5 THEN N'IN_TRANSIT' ELSE N'PENDING' END,CASE WHEN @i<=5 THEN DATEADD(day,-8,@now) END,CASE WHEN @i<=4 THEN DATEADD(day,-5,@now) END);
-   IF @i<=5
+    IF @i<=4
    BEGIN
     INSERT dbo.Review(orderItemId,productId,reviewerId,rating,comment,createdAt)
     VALUES(@item,@pid,@uid,CHOOSE(@i,5,4,3,2,1),CHOOSE(@i,N'Sản phẩm đúng mô tả, đóng gói chắc chắn và hoạt động ổn định.',N'Chất lượng tốt, ngoại hình đẹp; thời lượng pin thấp hơn kỳ vọng một chút.',N'Sản phẩm dùng được nhưng hộp bị móp nhẹ khi giao tới.',N'Thông tin cơ bản đúng nhưng sản phẩm có nhiều vết xước hơn ảnh mô tả.',N'Sản phẩm gặp lỗi sau lần sử dụng đầu tiên và cần hỗ trợ đổi trả.'),DATEADD(day,-5+@i,@now));
@@ -155,14 +155,16 @@ BEGIN TRY
     INSERT dbo.OrderTable(checkoutGroupId,buyerId,sellerId,shippingOptionId,shippingFullName,shippingEmail,shippingPhone,shippingStreet,shippingCity,shippingCountry,subtotal,discountAmount,shippingFee,totalAmount,status,orderDate)
     VALUES(@group,@uid,@sid,@option,CONCAT(N'Khách mẫu ',1+(@i+@j-2)%12),CONCAT(N'seed.buyer',RIGHT('0'+CONVERT(varchar(2),1+(@i+@j-2)%12),2),N'@example.test'),N'0000000000',CONCAT(1+(@i+@j-2)%12,N' Đường Demo'),N'Hồ Chí Minh',N'Vietnam',@price,0,30000,@price+30000,N'COMPLETED',DATEADD(day,-5,@feedbackDate));
     SET @order=SCOPE_IDENTITY();
-    INSERT dbo.OrderItem(orderId,listingId,productId,quantity,unitPrice,productTitle,imageUrl,createdAt)
-    VALUES(@order,@lid,@pid,1,@price,@title,@imageUrl,DATEADD(day,-5,@feedbackDate));
+     INSERT dbo.OrderItem(orderId,listingId,productId,quantity,unitPrice,productTitle,imageUrl,createdAt)
+     VALUES(@order,@lid,@pid,1,@price,@title,@imageUrl,DATEADD(day,-5,@feedbackDate)); SET @item=SCOPE_IDENTITY();
     INSERT dbo.Payment(checkoutGroupId,amount,method,provider,transactionId,status,paidAt,createdAt)
     VALUES(@group,@price+30000,N'PAYPAL',N'MOCK',CONCAT(N'SEED-FEEDBACK-PAY-',@group),N'PAID',DATEADD(day,-5,@feedbackDate),DATEADD(day,-5,@feedbackDate));
     INSERT dbo.ShippingInfo(orderId,carrier,trackingNumber,status,shippedAt,deliveredAt)
     VALUES(@order,N'Demo Carrier',CONCAT(N'FEEDBACK-',@order),N'DELIVERED',DATEADD(day,-3,@feedbackDate),@feedbackDate);
-    INSERT dbo.SellerFeedback(orderId,sellerId,buyerId,feedbackType,comment,createdAt)
-    VALUES(@order,@sid,@uid,CASE WHEN (@i+@j)%13=0 THEN N'NEGATIVE' WHEN (@i+@j)%7=0 THEN N'NEUTRAL' ELSE N'POSITIVE' END,CASE WHEN (@i+@j)%13=0 THEN N'Sản phẩm giao chậm và người bán phản hồi chưa kịp thời.' WHEN (@i+@j)%7=0 THEN N'Sản phẩm đúng mô tả, thời gian giao hàng ở mức chấp nhận được.' WHEN @j=1 THEN N'Giao hàng nhanh, đóng gói chắc chắn và sản phẩm đúng mô tả.' WHEN @j=2 THEN N'Người bán thân thiện, hỗ trợ tốt và cập nhật đơn hàng đầy đủ.' ELSE N'Giao dịch thuận lợi, chất lượng sản phẩm tốt. Sẽ tiếp tục ủng hộ.' END,@feedbackDate);
+     INSERT dbo.SellerFeedback(orderId,sellerId,buyerId,feedbackType,comment,createdAt)
+     VALUES(@order,@sid,@uid,CASE WHEN (@i+@j)%13=0 THEN N'NEGATIVE' WHEN (@i+@j)%7=0 THEN N'NEUTRAL' ELSE N'POSITIVE' END,CASE WHEN (@i+@j)%13=0 THEN N'Sản phẩm giao chậm và người bán phản hồi chưa kịp thời.' WHEN (@i+@j)%7=0 THEN N'Sản phẩm đúng mô tả, thời gian giao hàng ở mức chấp nhận được.' WHEN @j=1 THEN N'Giao hàng nhanh, đóng gói chắc chắn và sản phẩm đúng mô tả.' WHEN @j=2 THEN N'Người bán thân thiện, hỗ trợ tốt và cập nhật đơn hàng đầy đủ.' ELSE N'Giao dịch thuận lợi, chất lượng sản phẩm tốt. Sẽ tiếp tục ủng hộ.' END,@feedbackDate);
+     IF @i=1 INSERT dbo.Review(orderItemId,productId,reviewerId,rating,comment,createdAt)
+      VALUES(@item,@pid,@uid,CHOOSE(@j,5,5,4),CHOOSE(@j,N'Great laptop, fast and reliable for daily work.',N'Excellent value and battery life for the price.',N'Good condition and performance, delivery was smooth.'),DATEADD(hour,@j,@feedbackDate));
     SET @j+=1;
    END;
    SET @i+=1;

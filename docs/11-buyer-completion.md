@@ -41,7 +41,7 @@ PayPal remains mock as required by the backlog. External SMTP/Google cannot be v
 - buyer-auction-smoke.mjs: 29 proxy/concurrent bid/winner checkout assertions passed.
 - buyer-feedback-smoke.mjs: 7 delivered review/feedback assertions passed.
 - buyer-lifecycle-smoke.mjs: 10 concurrent checkout races passed, plus automatic expiry even after buyer lock and exactly-once stock restoration.
-- Playwright on headless Brave: 2 end-to-end flows passed (registration/verification/merge/save/restore/address/COD, and guest Buy It Now/failed payment/retry/cart preservation).
+- Playwright covers PayPal-only checkout for registered and guest buyers, including failed payment retry and cart preservation.
 - buyer-rate-limit-smoke.mjs: login/API 429, Retry-After and anonymous-order denial passed. Fixed endpoint metadata overriding the original login limiter.
 - 100 simultaneous virtual clients, 12 seeded buyer accounts, 400 requests: 0 errors, elapsed 1778 ms, API p95 680 ms on this local machine. This smoke is not a production capacity guarantee.
 - Frontend build/lint passed; npm audit reports 0 vulnerabilities.
